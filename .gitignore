@@ -1,0 +1,17 @@
+# Powerpack runtime state (lives under $XDG_STATE_HOME/herdr-powerpack at runtime,
+# never in the repo) — ignore any local copies.
+*.log
+reconcile.json
+env.json
+snapshots/
+
+# test artifacts / isolated homes
+.pp-test-*/
+tmp/
+.DS_Store
+
+# local dev
+node_modules/
+*.tmp
+.ansible/
+.ansible-lint

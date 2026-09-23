@@ -14,13 +14,17 @@ Visible checklist. Updated at every milestone.
 - [x] `docs/upstream-audit.md` (ADOPT/OPTIONAL/ADAPT/HOLD/REJECT + corrections)
 - [x] `docs/architecture.md` (design decisions)
 
-## Phase 1 — Thin meta-plugin  ⬜ TODO
-- [ ] `herdr-plugin.toml` (current format)
-- [ ] `config/bundle.lock.json` (pinned SHAs)
-- [ ] `scripts/common.sh`, `bootstrap.sh`, `reconcile.sh`, `doctor.sh`
-- [ ] ownership-aware idempotent config
-- [ ] `README.md`, `LICENSE`, `.gitignore`
-- [ ] tests: clean install, install-over-existing-config, idempotency
+## Phase 1 — Thin meta-plugin  ✅ DONE (tests pass)
+- [x] `herdr-plugin.toml` (current format; validates via `herdr plugin link`)
+- [x] `config/bundle.lock.json` (pinned full commit SHAs, licenses, install hooks, security notes)
+- [x] `scripts/common.sh`, `bootstrap.sh`, `reconcile.sh`, `doctor.sh`, `versions.sh`, `board.sh`, `update.sh`, `rollback.sh`
+- [x] fault-tolerant bootstrap (best-effort, always exit 0); `pp_herdr_cli` runs registry ops socket-less
+- [x] ownership-aware idempotent config (user config.toml untouched; verified byte-identical)
+- [x] doctor human + `--json` + `--strict`; unsafe-listener check; secret redaction
+- [x] `README.md`, `LICENSE` (MIT), `.gitignore`, `docs/security.md`, `docs/troubleshooting.md`
+- [x] `tests/run-tests.sh`: 16/16 pass (clean install, config preservation, idempotency,
+      graceful degradation, doctor json/human/strict, HOLD isolation)
+- [x] end-to-end: manifest link + `plugin action invoke` executes through a Herdr server
 
 ## Phase 2 — Core bundle  ⬜ TODO
 - [ ] wire browser, roamgate, swarm, worktreeinclude, file-annotator, gh-checks, pr-board, notifications

@@ -1,0 +1,77 @@
+# HerdR Powerpack — a thin meta-plugin / distribution.
+#
+# One install provides a curated, tested HerdR capability bundle by adopting
+# existing upstream plugins (never re-implementing them). See:
+#   docs/architecture.md   — design
+#   docs/upstream-audit.md — verified upstream decisions
+#   docs/security.md       — supply-chain posture
+#
+# The Powerpack owns: dependency/version locking (config/bundle.lock.json),
+# environment-aware bootstrap/reconcile, ownership-aware safe config, health/
+# doctor UX, update/rollback, and integration glue. It is intentionally thin.
+#
+# Install:   herdr plugin install berlinguyinca/herdr-powerpack
+# Doctor:    herdr plugin action invoke berlinguyinca.powerpack.doctor
+# Reconcile: herdr plugin action invoke berlinguyinca.powerpack.reconcile
+# Board:     herdr plugin pane open --plugin berlinguyinca.powerpack --entrypoint board
+
+id = "berlinguyinca.powerpack"
+name = "HerdR Powerpack"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Thin meta-plugin: curated, tested HerdR capability bundle (browser, mobile, swarm, worktrees, review, GitHub, notifications) via pinned upstream plugins."
+platforms = ["linux", "macos"]
+
+# Build hook: runs at install time (as the user, no server). Best-effort —
+# installs each locked upstream at its pinned ref and NEVER aborts the Powerpack
+# install on a per-dependency failure.
+[[build]]
+command = ["bash", "scripts/bootstrap.sh"]
+
+# Startup hook: light reconcile (verify presence, refresh state). No network.
+[[startup]]
+command = ["bash", "scripts/reconcile.sh", "--light"]
+
+[[actions]]
+id = "doctor"
+title = "Powerpack: doctor (health matrix)"
+contexts = ["global"]
+command = ["bash", "scripts/doctor.sh"]
+
+[[actions]]
+id = "status"
+title = "Powerpack: status"
+contexts = ["global"]
+command = ["bash", "scripts/doctor.sh"]
+
+[[actions]]
+id = "versions"
+title = "Powerpack: versions"
+contexts = ["global"]
+command = ["bash", "scripts/versions.sh"]
+
+[[actions]]
+id = "reconcile"
+title = "Powerpack: reconcile (self-heal / repair)"
+contexts = ["global"]
+command = ["bash", "scripts/reconcile.sh", "--full"]
+
+[[actions]]
+id = "update"
+title = "Powerpack: update (snapshot + refresh pinned deps)"
+contexts = ["global"]
+command = ["bash", "scripts/update.sh"]
+
+[[actions]]
+id = "rollback"
+title = "Powerpack: rollback to last snapshot"
+contexts = ["global"]
+command = ["bash", "scripts/rollback.sh"]
+
+[[panes]]
+id = "board"
+title = "Powerpack Board"
+placement = "popup"
+width = "85%"
+height = 26
+command = ["bash", "scripts/board.sh"]
