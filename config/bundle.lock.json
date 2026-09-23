@@ -42,9 +42,9 @@
       "runtime_prereqs": ["bun"],
       "license": "MIT",
       "default": true,
-      "install_hook": "downloads checksum-verified prebuilt release binary (bun scripts/studio-plugin.ts build)",
-      "startup_hook": "none",
-      "security_notes": "Default bind is 127.0.0.1:8787. Loopback binds bypass login; non-loopback requires ROAMGATE_PASSWORD + VPN/HTTPS. Private-by-default / Tailscale-oriented. Never opened to a public bind by the Powerpack.",
+      "install_hook": "thin launcher: build = 'bun scripts/studio-plugin.ts build'; the 'start' action downloads the checksum-verified prebuilt release binary and runs it via the service manager (systemd/launchd) on port 8787",
+      "startup_hook": "none (started via the roamgate.start action, not at Herdr server start)",
+      "security_notes": "Roamgate's OWN default is HOST=0.0.0.0 (exposes the LAN). The Powerpack OWNS roamgate.env and enforces HOST=127.0.0.1 (loopback, private) by default; POWERPACK_MOBILE_BIND=loopback|tailscale|lan selects the bind (tailscale uses the tailnet IP). Loopback bypasses login; a non-loopback bind requires ROAMGATE_PASSWORD (+TLS recommended). doctor warns on any public bind and --strict fails on it.",
       "verified": "2026-09-21"
     },
     {
@@ -157,10 +157,10 @@
       "install_prereqs": ["cargo"],
       "runtime_prereqs": [],
       "license": "MIT",
-      "default": true,
+      "default": false,
       "install_hook": "cargo build --release",
       "startup_hook": "none",
-      "security_notes": "Native OS desktop notifications on agent blocked/done (deduped). No network, no secrets. Degrades gracefully on headless (no notification backend).",
+      "security_notes": "Native OS desktop notifications on agent blocked/done (deduped). No network, no secrets. OPTIONAL/opt-in (default=false): it must COMPILE and HerdR runs build hooks in a sandboxed environment where a rustup default toolchain may not resolve, so it cannot build on hosts without that setup; kept out of defaults so they install green (it is a no-op on headless anyway). Enable per-host to use it.",
       "verified": "2026-09-21"
     },
     {

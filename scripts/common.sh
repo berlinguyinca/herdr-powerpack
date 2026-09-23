@@ -89,6 +89,52 @@ pp_ver_ge() {
 
 pp_have() { command -v "$1" >/dev/null 2>&1; }
 
+# The node's Tailscale IPv4 (best-effort; empty if tailscale absent/not up).
+pp_tailscale_ip() {
+  command -v tailscale >/dev/null 2>&1 || return 1
+  tailscale ip -4 2>/dev/null | head -1
+}
+
+# OWN roamgate's bind so the mobile surface is PRIVATE by default. Roamgate's
+# own `service install` defaults to HOST=0.0.0.0 (exposes the LAN); the Powerpack
+# overrides it to loopback unless the operator opts into tailnet/LAN. This is the
+# spec's "private/Tailscale-oriented binding, not a public listener" requirement.
+# Ownership-aware: it sets HOST/PORT and preserves any user-set ROAMGATE_PASSWORD
+# / TLS lines. Roamgate preserves an existing roamgate.env on `service install`.
+pp_configure_roamgate() {
+  local bind="${POWERPACK_MOBILE_BIND:-loopback}"
+  local host="127.0.0.1"
+  case "$bind" in
+    tailscale) host="$(pp_tailscale_ip || true)"; [ -n "$host" ] || { pp_warn "tailscale bind requested but no tailnet IP found; falling back to loopback"; host="127.0.0.1"; } ;;
+    lan)       host="0.0.0.0" ;;
+    *)         host="127.0.0.1" ;;
+  esac
+  local cfgdir="${XDG_CONFIG_HOME:-$HOME/.config}/roamgate"
+  local envfile="$cfgdir/roamgate.env"
+  mkdir -p "$cfgdir"
+  local tmp="$cfgdir/.roamgate.env.pp.$$"
+  {
+    # preserve user secrets/config (password, TLS) if present
+    if [ -f "$envfile" ]; then
+      grep -E '^(ROAMGATE_PASSWORD=|ROAMGATE_TLS_CERT=|ROAMGATE_TLS_KEY=|ROAMGATE_LOG_LEVEL=|HERDR_)' "$envfile" 2>/dev/null
+    fi
+    echo "# Managed by herdr-powerpack: bind is private by default (loopback)."
+    echo "# Override with POWERPACK_MOBILE_BIND=loopback|tailscale|lan, then reconcile."
+    echo "HOST=$host"
+    echo "PORT=${POWERPACK_MOBILE_PORT:-8787}"
+  } > "$tmp"
+  chmod 600 "$tmp"; mv "$tmp" "$envfile"
+  pp_info "roamgate bind -> HOST=$host ($bind)"
+}
+
+# Post-install owned config for managed deps (idempotent). Currently: roamgate bind.
+# Call after the reconcile/bootstrap install pass completes.
+pp_configure_managed() {
+  if [ "$(jq -r '[.deps[]|select(.id=="roamgate" and (.status=="installed" or .status=="up-to-date"))]|length' "$PP_STATE_FILE" 2>/dev/null)" = "1" ]; then
+    pp_configure_roamgate
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Logging (honours POWERPACK_QUIET=1); secrets are redacted on stderr too
 # ---------------------------------------------------------------------------

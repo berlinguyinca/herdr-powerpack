@@ -44,6 +44,20 @@ unsafe_listeners() {
     | grep -Ei ':(8787|9222|9229|9230)$' 2>/dev/null
 }
 
+# Roamgate private-by-default bind check. Reads the Powerpack-owned roamgate.env
+# so we can warn on a public bind even before the service is started.
+# Prints "loopback" | "exposed:<host>" | "" (roamgate not installed).
+roamgate_bind() {
+  local envfile="${XDG_CONFIG_HOME:-$HOME/.config}/roamgate/roamgate.env"
+  [ -f "$envfile" ] || return 0
+  local host; host="$(grep -E '^HOST=' "$envfile" 2>/dev/null | head -1 | cut -d= -f2-)"
+  [ -n "$host" ] || return 0
+  case "$host" in
+    127.0.0.1|::1|localhost) echo "loopback" ;;
+    *) echo "exposed:$host" ;;
+  esac
+}
+
 # Build the per-dep health array
 build_deps() {
   local dep id name cap repo ref ver def hold minh status reason health
@@ -100,8 +114,10 @@ if [ "$JSON" = "1" ]; then
       --arg generated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       --argjson deps "$local_deps_json" \
       --arg listeners "$(printf '%s' "$listeners" | jq -R . | jq -s 'map(select(length>0))')" \
+      --arg roamgate_bind "$(roamgate_bind)" \
       '{ok:true,schema:1,os:$os,arch:$arch,herdr_version:$herdr,powerpack_version:$powerpack,
         gh_authenticated:($ghauth=="true"),chromium_present:($chromium=="true"),
+        roamgate_bind:$roamgate_bind,
         listeners_non_loopback:$listeners,deps:$deps,generated:$generated}'
   else
     printf 'jq not available; doctor --json requires jq\n' >&2
@@ -111,7 +127,10 @@ if [ "$JSON" = "1" ]; then
   if [ "$STRICT" = "1" ]; then
     crit="$(printf '%s' "$DEPS" | jq -s '[.[]|select(.default=="true" and (.health=="missing" or .health=="failed"))]|length' 2>/dev/null || echo 0)"
     nlisten="$(unsafe_listeners | grep -c . || true)"
-    if [ "${crit:-0}" -gt 0 ] || [ "${nlisten:-0}" -gt 0 ]; then exit 1; fi
+    rbind="$(roamgate_bind)"
+    # A public roamgate bind (0.0.0.0 / LAN / tailnet-without-password) is a strict failure.
+    exposed=0; case "$rbind" in exposed:*) exposed=1;; esac
+    if [ "${crit:-0}" -gt 0 ] || [ "${nlisten:-0}" -gt 0 ] || [ "$exposed" = "1" ]; then exit 1; fi
   fi
   exit 0
 fi
@@ -136,6 +155,12 @@ while IFS= read -r line; do
   printf '  %-30s %-10s %-11s %s\n' "$name" "$status" "$health" "$reason"
 done <<<"$DEPS"
 echo
+RBIND="$(roamgate_bind)"
+case "$RBIND" in
+  loopback) echo "  ✓ roamgate bind: loopback (private)" ;;
+  exposed:*) echo "  ⚠ roamgate bind: ${RBIND#exposed:} (PUBLIC) — set POWERPACK_MOBILE_BIND=loopback (or tailscale) and run reconcile" ;;
+  *) : ;;
+esac
 LISTENERS="$(unsafe_listeners)"
 if [ -n "$LISTENERS" ]; then
   echo "  ⚠ non-loopback listeners detected (review before exposing to a network):"
@@ -143,6 +168,7 @@ if [ -n "$LISTENERS" ]; then
 else
   echo "  ✓ no non-loopback listeners detected on common web/CDP ports"
 fi
+echo
 echo
 echo "  (run with --json for machine-readable output; --strict to fail on critical issues)"
 exit 0

@@ -93,6 +93,7 @@ run() {
 detect_env
 write_owned_config
 run
+pp_configure_managed
 
 if pp_have_jq && [ -f "$PP_STATE_FILE" ]; then
   local_ok=0

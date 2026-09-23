@@ -36,6 +36,7 @@ if [ "$MODE" = "--full" ]; then
     [ -n "$obj" ] && results="${results}${obj}"$'\n'
   done < <(pp_lock_deps)
   pp_write_state "$results" full
+  pp_configure_managed
   pp_info "reconcile --full complete"
   exit 0
 fi

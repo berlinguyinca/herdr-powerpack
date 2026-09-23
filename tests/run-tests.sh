@@ -110,6 +110,24 @@ bash "$ROOT/scripts/bootstrap.sh" >/dev/null 2>&1
 planno=$(state_field '.deps[]|select(.id=="official.plannotator")|.status')
 [ "$planno" = "held" ] && ok "plannotator status=held" || bad "plannotator status=$planno (expected held)"
 
+# --- Test 9: roamgate private bind (loopback default; lan => strict fails) --
+echo "[9] roamgate private bind (private-by-default security)"
+RG_ENV="$XDG_CONFIG_HOME/roamgate/roamgate.env"
+# default -> loopback
+( export POWERPACK_MOBILE_BIND=""; . "$ROOT/scripts/common.sh"; pp_ensure_dirs; pp_configure_roamgate ) >/dev/null 2>&1
+host_default=$(grep -E '^HOST=' "$RG_ENV" 2>/dev/null | cut -d= -f2-)
+[ "$host_default" = "127.0.0.1" ] && ok "default bind HOST=127.0.0.1 (private)" || bad "default HOST=$host_default (expected 127.0.0.1)"
+bash "$ROOT/scripts/doctor.sh" --json 2>/dev/null | jq -e '.roamgate_bind=="loopback"' >/dev/null 2>&1 \
+  && ok "doctor reports roamgate_bind=loopback" || bad "doctor roamgate_bind not loopback"
+# lan -> exposed -> strict must fail
+( export POWERPACK_MOBILE_BIND=lan; . "$ROOT/scripts/common.sh"; pp_ensure_dirs; pp_configure_roamgate ) >/dev/null 2>&1
+host_lan=$(grep -E '^HOST=' "$RG_ENV" 2>/dev/null | cut -d= -f2-)
+[ "$host_lan" = "0.0.0.0" ] && ok "lan bind HOST=0.0.0.0 (as requested)" || bad "lan HOST=$host_lan (expected 0.0.0.0)"
+bash "$ROOT/scripts/doctor.sh" --json 2>/dev/null | jq -e '.roamgate_bind | startswith("exposed:")' >/dev/null 2>&1 \
+  && ok "doctor flags a public roamgate bind (exposed)" || bad "doctor did not flag the public roamgate bind"
+# restore loopback (leave the test home in a safe state)
+( export POWERPACK_MOBILE_BIND=""; . "$ROOT/scripts/common.sh"; pp_ensure_dirs; pp_configure_roamgate ) >/dev/null 2>&1
+
 # --- summary ----------------------------------------------------------------
 echo
 echo "=== summary: $PASS passed, $FAIL failed (HOME: $TESTHOME) ==="

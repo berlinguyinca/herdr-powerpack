@@ -117,11 +117,18 @@ Plannotator's own plan/review semantics are untouched.
 linux/macos/windows): a full browser **client** — workspaces, tabs, panes, agent status,
 session inspection, file explorer, diff annotations; PWA install on iPhone/iPad/macOS/
 Chrome; "private remote access" workflow. Its security model is exactly the spec's
-private-by-default model (**`SECURITY.md`**): default bind is **`127.0.0.1`** (default
-port 8787); loopback binds bypass login; non-loopback requires a strong
-`ROAMGATE_PASSWORD` + VPN/HTTPS; "A VPN, SSH tunnel, or reverse proxy forwarding to
-loopback becomes the entire remote access boundary" — i.e. the **Tailscale-oriented**
+private-by-default model (**`SECURITY.md`**): loopback binds bypass login; non-loopback
+requires a strong `ROAMGATE_PASSWORD` + VPN/HTTPS; "A VPN, SSH tunnel, or reverse proxy
+forwarding to loopback becomes the entire remote access boundary" — the **Tailscale-oriented**
 model the spec asks for. It downloads a **checksum-verified** prebuilt release binary.
+
+- **Phase 2 finding (corrects the documented default):** `SECURITY.md` *describes* a
+  loopback-oriented model, but roamgate's **`service install` actually writes
+  `HOST=0.0.0.0`** (verified: the running process bound `0.0.0.0:8787` and advertised many
+  LAN IPs). **Therefore the Powerpack OWNS `roamgate.env` and enforces `HOST=127.0.0.1`
+  (loopback) by default** (`POWERPACK_MOBILE_BIND=loopback|tailscale|lan`). `doctor`
+  reports the bind and `--strict` fails on any public bind. Verified end-to-end: with the
+  Powerpack's env the prebuilt binary binds `127.0.0.1:8787` and serves HTTP 200.
 
 **REJECT `eyalev/herdr-web`** (v0.1.0, 5★): loopback-only (port 7930), minimal, strictly
 superseded by Roamgate in maturity and feature set. (Correction: the spec's mobile
@@ -176,12 +183,16 @@ unauthenticated states."
 
 | Repo | Stars | id | min_herdr | Decision |
 | --- | --- | --- | --- | --- |
-| `quinnjr/herdr-notifications` | 1 | `quinnjr.herdr-notifications` | 0.7.0 | **ADOPT** (desktop) |
+| `quinnjr/herdr-notifications` | 1 | `quinnjr.herdr-notifications` | 0.7.0 | **OPTIONAL** (desktop; opt-in) |
 | `barnuri/herdr-notifications` | 1 | (JS) | — | **OPTIONAL** (Telegram) |
 
-- **ADOPT `quinnjr/herdr-notifications`**: native **OS desktop** notifications on
-  `pane.agent_status_changed` (blocked/done only, deduped). Build = `cargo build --release`
-  (present). No network, no secrets → safe default. Degrades gracefully on headless.
+- **OPTIONAL `quinnjr/herdr-notifications`**: native **OS desktop** notifications on
+  `pane.agent_status_changed` (blocked/done only, deduped). No network, no secrets.
+  **Phase 2 finding → demoted from default to opt-in:** it has **no prebuilt binary** and
+  must `cargo build --release`; **HerdR runs build hooks in a sandboxed environment where a
+  rustup default toolchain may not resolve**, so it fails to build on hosts without that
+  setup (verified on this host). Keeping it out of the default bundle lets all defaults
+  install green; it is a no-op on headless anyway. Enable per-host to use it.
 - **OPTIONAL `barnuri/herdr-notifications`**: **Telegram** notifications on idle/blocked/
   done. Needs a **bot token (secret)** + outbound network → **disabled by default**,
   user-configured, never written to logs/UI.
@@ -235,9 +246,9 @@ ADOPT (enabled by default when prereqs are met):
 - `serhii-chernenko.worktreeinclude`
 - `jonasbaeumer.file-annotator`
 - `herdr-gh-checks`, `cdowell09.pr-board` — degrade when unauthenticated
-- `quinnjr.herdr-notifications`
 
 OPTIONAL (disabled by default):
+- `quinnjr.herdr-notifications` (desktop; opt-in — must compile, and Herdr's sandboxed build env may not resolve a rustup default toolchain, so it can't build on all hosts)
 - `zenbu-labs.terminal-browser`
 - `barnuri/herdr-notifications` (Telegram; needs token)
 
