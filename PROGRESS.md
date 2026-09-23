@@ -36,8 +36,14 @@ Visible checklist. Updated at every milestone.
 - [x] `tests/run-tests.sh`: **20/20 pass** (added roamgate private-bind test)
 - [x] real host restored clean after roamgate live-test (no service, no token, no 0.0.0.0 exposure)
 
-## Phase 3 — Security / update / rollback  ⬜ TODO
-- [ ] pinning + provenance, preflight, snapshot/accept, rollback, unsafe-listener checks, secret redaction
+## Phase 3 — Security / update / rollback  ✅ DONE (tests pass)
+- [x] pinning + provenance (lock: full SHAs, licenses, install hooks, security notes, verified dates)
+- [x] **update lifecycle**: snapshot → preflight (pinned-ref change report) → force re-pin → smoke gate → accept/rollback
+- [x] **smoke gate**: detects a default dep regressing installed→failed/missing and **auto-rolls-back**, exit 1
+- [x] **rollback**: restores each dep at its **snapshotted** ref (works even if the lock changed); restores lost deps
+- [x] unsafe-listener check (doctor) + secret redaction (common.sh)
+- [x] bugs found & fixed: lock top-level key is `dependencies` (not `deps`); state stores `default` as string `"true"` (smoke gate now compares the string)
+- [x] `tests/run-tests.sh`: **26/26 pass** (added update snapshot/accept, rollback restore, auto-rollback-on-regression)
 
 ## Phase 4 — Pi Engineering integration  ⬜ TODO
 - [ ] expose capabilities without duplicating orchestration/state

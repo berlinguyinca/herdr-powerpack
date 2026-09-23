@@ -1,30 +1,38 @@
 #!/usr/bin/env bash
-# rollback.sh — restore the last known-good Powerpack snapshot (basic; hardened in Phase 3).
-# Reads the most recent snapshot and re-pins each previously-installed dependency
-# to the ref it recorded. Optional deps are left untouched.
+# rollback.sh — restore the last known-good snapshot.
+# For every dep that was installed/up-to-date in the snapshot, force-reinstall it at
+# its SNAPSHOT ref (which may differ from the current lock ref). This makes rollback
+# meaningful even when the lock itself changed: you return to the exact prior revisions.
+# Snapshot dep objects lack install_prereqs/platforms (lock-only fields), so we merge
+# the lock's dep object and override its ref with the snapshotted ref.
 set -o pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 # shellcheck source=common.sh
 . "$HERE/common.sh"
 pp_ensure_dirs
-SNAP_DIR="$PP_STATE_DIR/snapshots"
 
-snap="$(ls -1 "$SNAP_DIR"/*.json 2>/dev/null | sort | tail -n1)"
+snap="$(jq -r '.last_snapshot // empty' "$PP_STATE_FILE" 2>/dev/null)"
+[ -z "$snap" ] && snap="$(ls -1t "$PP_STATE_DIR/snapshots"/*.json 2>/dev/null | head -1)"
 if [ -z "$snap" ] || [ ! -f "$snap" ]; then
-  pp_error "no snapshot found in $SNAP_DIR; nothing to roll back to"
-  exit 1
+  pp_warn "no snapshot to roll back to"; exit 1
 fi
 pp_info "rolling back to snapshot: $snap"
 
-if pp_have_jq; then
-  # For each dep that was installed at a ref, reinstall at that ref.
-  while IFS=$'\t' read -r id src ref; do
-    [ -z "$id" ] && continue
-    pp_info "re-pinning $id -> ${ref:0:12}"
-    out="$(pp_herdr_cli plugin install "$src" --ref "$ref" -y 2>&1)"; rc=$?
-    if [ $rc -eq 0 ]; then pp_info "  ok: $id"
-    else pp_warn "  failed: $id: $(printf '%s' "$out" | tail -n1 | _pp_redact)"; fi
-  done < <(jq -r '.deps[] | select(.installed_ref != null and .installed_ref != "" and (.status=="installed" or .status=="up-to-date" or .status=="present")) | [.id,.source,.installed_ref] | @tsv' "$snap" 2>/dev/null)
-  pp_info "rollback complete"
-fi
+results=""
+while IFS= read -r d; do
+  [ -z "$d" ] && continue
+  st=$(jq -r '.status // empty' <<<"$d")
+  { [ "$st" = "installed" ] || [ "$st" = "up-to-date" ]; } || continue
+  id=$(jq -r '.id' <<<"$d"); sref=$(jq -r '.ref // empty' <<<"$d")
+  # merge the lock's dep object (for install_prereqs/platforms/etc.) and override ref
+  depobj=$(jq -c --arg id "$id" --arg sref "$sref" \
+    '(.dependencies[] | select(.id==$id)) | (if $sref != "" then .ref=$sref else . end)' "$PP_LOCK_FILE" 2>/dev/null)
+  [ -z "$depobj" ] && { pp_warn "no lock entry for $id; skipping"; continue; }
+  obj=$(pp_process_dep "$depobj" 1 2>/dev/null)
+  [ -n "$obj" ] && results="${results}${obj}"$'\n'
+  pp_info "rollback: $id @ $(jq -r '.installed_ref // .ref // "n/a"' <<<"$obj" 2>/dev/null | cut -c1-12)"
+done < <(jq -c '.deps[]' "$snap")
+
+pp_write_state "$results" rollback
+pp_info "rollback complete"
 exit 0

@@ -128,6 +128,32 @@ bash "$ROOT/scripts/doctor.sh" --json 2>/dev/null | jq -e '.roamgate_bind | star
 # restore loopback (leave the test home in a safe state)
 ( export POWERPACK_MOBILE_BIND=""; . "$ROOT/scripts/common.sh"; pp_ensure_dirs; pp_configure_roamgate ) >/dev/null 2>&1
 
+# --- Tests 10-12: update / rollback (Phase 3) -----------------------------
+# A registry-presence helper (socket-less; isolated HOME).
+reg_has() { env -u HERDR_SOCKET_PATH -u HERDR_ENV herdr plugin list --json 2>/dev/null | jq -e --arg id "$1" '[(.result.plugins//.plugins//[])[].plugin_id]|index($id) != null' >/dev/null 2>&1; }
+uninstall_dep() { env -u HERDR_SOCKET_PATH -u HERDR_ENV herdr plugin uninstall "$1" >/dev/null 2>&1; }
+
+echo "[10] update: snapshot + accept (no-op re-pin)"
+bash "$ROOT/scripts/update.sh" >/dev/null 2>&1; rc=$?
+assert "update exits 0 (accepted)" test "$rc" -eq 0
+assert "last_snapshot recorded" test -f "$(jq -r '.last_snapshot // empty' "$STATE")"
+
+echo "[11] rollback: restore a lost dep"
+uninstall_dep structupath.swarm
+if reg_has structupath.swarm; then bad "setup: swarm still present"; else ok "setup: swarm removed"; fi
+bash "$ROOT/scripts/rollback.sh" >/dev/null 2>&1
+assert "rollback restores the lost dep (swarm)" reg_has structupath.swarm
+
+echo "[12] update smoke gate: auto-rollback on regression"
+uninstall_dep structupath.swarm; bash "$ROOT/scripts/rollback.sh" >/dev/null 2>&1   # good baseline
+bash "$ROOT/scripts/update.sh" >/dev/null 2>&1                                        # fresh snapshot (swarm installed)
+badlock="$(mktemp)"
+jq '(.dependencies[] | select(.id=="structupath.swarm")).ref="0000000000000000000000000000000000000000"' "$ROOT/config/bundle.lock.json" > "$badlock"
+POWERPACK_LOCK="$badlock" bash "$ROOT/scripts/update.sh" >/dev/null 2>&1; rc=$?
+rm -f "$badlock"
+assert "bad update exits non-zero (smoke gate fired)" test "$rc" -ne 0
+assert "swarm restored after auto-rollback" reg_has structupath.swarm
+
 # --- summary ----------------------------------------------------------------
 echo
 echo "=== summary: $PASS passed, $FAIL failed (HOME: $TESTHOME) ==="
