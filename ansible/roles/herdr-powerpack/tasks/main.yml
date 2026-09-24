@@ -1,0 +1,17 @@
+---
+# herdr-powerpack — thin meta-plugin distribution role.
+# Installs the pinned Powerpack + its base prereqs, self-heals (reconcile), and
+# runs doctor. Host-agnostic (no host names; uses ansible_os_family). Headless
+# nodes degrade gracefully because the bundle's doctor reports unsupported GUI
+# capabilities (browser/notifications) as degraded rather than failed.
+
+- name: Run OS-aware prereqs
+  include_tasks: prereqs.yml
+
+- name: Install herdr + the pinned Powerpack
+  include_tasks: install.yml
+  when: powerpack_manage
+
+- name: Reconcile + doctor + private-bind enforcement
+  include_tasks: verify.yml
+  when: powerpack_manage

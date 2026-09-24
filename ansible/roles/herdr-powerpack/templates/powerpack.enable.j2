@@ -1,0 +1,6 @@
+# managed by berlinguyinca.powerpack — do not edit by hand
+# Optional (non-default) capabilities to enable. Written by the Ansible role from
+# the `powerpack_enable` variable; the Powerpack's reconcile re-applies it.
+{% for id in powerpack_enable %}
+{{ id }}
+{% endfor %}

@@ -1,0 +1,38 @@
+---
+# OS-aware prereqs. Host-agnostic: picks the package set from vars/main.yml by
+# ansible_os_family, so it runs on Debian/RedHat/macOS (and best-efforts others).
+
+- name: Determine package manager
+  set_fact:
+    powerpack_pkg: "{{ powerpack_pkg_manager[ansible_os_family] | default(powerpack_pkg_manager['default']) }}"
+    powerpack_prereqs: "{{ powerpack_base_prereqs[ansible_os_family] | default(powerpack_base_prereqs['default']) }}"
+
+- name: Install base prereqs (git, curl, jq)
+  package:
+    name: "{{ powerpack_prereqs }}"
+    state: present
+  become: true
+  when: powerpack_prereqs | length > 0
+
+# Optional toolchains — the bundle degrades gracefully without them.
+- name: Install Go (for pr-board source build) when requested
+  package:
+    name: "{{ powerpack_optional_pkgs[ansible_os_family | default('default')].go }}"
+    state: present
+  become: true
+  when: powerpack_prereq_go and (powerpack_optional_pkgs[ansible_os_family | default('default')].go | length > 0)
+
+- name: Install bun (for roamgate) when requested
+  block:
+    - name: Download and run the bun installer
+      shell: curl -fsSL https://bun.sh/install | bash
+      args:
+        warn: false
+      environment:
+        BUN_INSTALL: "{{ powerpack_home }}/.bun"
+    - name: Add bun to PATH for the managed user
+      lineinfile:
+        path: "{{ powerpack_home }}/.bashrc"
+        line: 'export PATH="$HOME/.bun/bin:$PATH"'
+        create: true
+  when: powerpack_prereq_bun

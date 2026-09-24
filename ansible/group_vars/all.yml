@@ -1,0 +1,23 @@
+---
+# Fleet-wide Powerpack variables. Host-agnostic — no host names here.
+# Per-host overrides go in host_vars/ if needed (e.g. one host wants LAN mobile).
+
+# Pin the Powerpack release for reproducible deploys.
+powerpack_ref: ""
+
+# The mobile surface is private by default (loopback). To reach it over the
+# tailnet, set POWERPACK_MOBILE_BIND=tailscale; only set 'lan' with a strong
+# ROAMGATE_PASSWORD. Never expose the mobile surface publicly.
+powerpack_mobile_bind: loopback
+
+# Enable optional (non-default) capabilities fleet-wide, e.g.:
+#   powerpack_enable: ["quinnjr.herdr-notifications"]
+powerpack_enable: []
+
+# Optional toolchains. Off by default; the bundle degrades gracefully without them.
+powerpack_prereq_bun: false   # roamgate (mobile)
+powerpack_prereq_go: false    # pr-board source build
+
+# CI-style gate: fail the playbook if doctor --json --strict finds a critical issue.
+# Keep false on headless hosts (GUI capabilities are expectedly degraded).
+powerpack_strict_doctor: false

@@ -1,0 +1,14 @@
+---
+# Deploy the HerdR Powerpack to the whole fleet. Host-agnostic: it targets the
+# inventory as-is (fry/beast/bender/macbook-m4 or any host group), never by name.
+#
+#   ansible-playbook -i <inventory> ansible/playbook.yml
+#   ansible-playbook -i <inventory> ansible/playbook.yml --limit headless --extra-vars 'powerpack_strict_doctor=false'
+- hosts: all
+  gather_facts: true
+  become: false
+  roles:
+    - role: herdr-powerpack
+      vars:
+        # Pin the Powerpack ref for reproducible deploys (set in group_vars instead).
+        powerpack_ref: "{{ powerpack_ref | default('') }}"

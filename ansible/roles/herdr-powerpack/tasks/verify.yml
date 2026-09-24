@@ -1,0 +1,48 @@
+---
+# Reconcile (self-heal) + doctor, and enforce the private mobile bind.
+
+- name: Write the Powerpack enable list (owned config; optional capabilities)
+  template:
+    src: powerpack.enable.j2
+    dest: "{{ powerpack_config_dir }}/enable.list"
+    mode: "0600"
+  when: powerpack_enable | length > 0
+
+- name: Run the Powerpack reconcile (self-heal / install defaults)
+  command: herdr plugin action invoke berlinguyinca.powerpack.reconcile
+  register: pp_reconcile
+  changed_when: true
+  environment:
+    HOME: "{{ powerpack_home }}"
+    POWERPACK_MOBILE_BIND: "{{ powerpack_mobile_bind }}"
+    POWERPACK_MOBILE_PORT: "{{ powerpack_mobile_port }}"
+
+- name: Locate the Powerpack checkout (for doctor/scripts)
+  command: herdr plugin list --json
+  register: pp_list
+  changed_when: false
+  environment:
+    HOME: "{{ powerpack_home }}"
+
+- name: Set the Powerpack plugin_root fact
+  set_fact:
+    powerpack_root: "{{ (pp_list.stdout | from_json).result.plugins | selectattr('plugin_id','equalto','berlinguyinca.powerpack') | map(attribute='plugin_root') | first | default('') }}"
+
+- name: Run doctor --json (record the health matrix)
+  command: "{{ powerpack_root }}/scripts/doctor.sh --json"
+  register: pp_doctor
+  changed_when: false
+  when: powerpack_root | length > 0
+
+- name: Fail the playbook on critical doctor findings (when powerpack_strict_doctor)
+  command: "{{ powerpack_root }}/scripts/doctor.sh --json --strict"
+  register: pp_doctor_strict
+  changed_when: false
+  failed_when: pp_doctor_strict.rc != 0
+  when: powerpack_strict_doctor and powerpack_root | length > 0
+
+- name: Report the doctor health matrix
+  debug:
+    var: pp_doctor.stdout
+    verbosity: 1
+  when: pp_doctor.stdout is defined

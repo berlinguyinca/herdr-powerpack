@@ -1,0 +1,28 @@
+---
+# herdr-powerpack role — internal vars (per OS family / architecture).
+
+# Base prereqs always required by the Powerpack scripts.
+powerpack_base_prereqs:
+  Debian: [git, curl, jq]
+  RedHat: [git, curl, jq]
+  Suse: [git, curl, jq]
+  Archlinux: [git, curl, jq]
+  Darwin: [git, curl, jq]
+  # Other families default to this (best-effort; git/curl/jq names vary).
+  default: [git, curl, jq]
+
+# Package manager for the detected OS family.
+powerpack_pkg_manager:
+  Debian: apt
+  RedHat: dnf
+  Suse: zypper
+  Archlinux: pacman
+  Darwin: homebrew
+  default: apt
+
+# Optional toolchain packages (used only when the corresponding prereq is on).
+powerpack_optional_pkgs:
+  Debian: { bun: [], go: [golang] }
+  RedHat: { bun: [], go: [golang] }
+  Darwin: { bun: [], go: [golang] }
+  default: { bun: [], go: [golang] }

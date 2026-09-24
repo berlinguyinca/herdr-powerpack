@@ -1,0 +1,39 @@
+---
+# Install herdr (optional) and the pinned Powerpack plugin.
+
+- name: Install the herdr CLI (when powerpack_install_herdr)
+  block:
+    - name: Assert a herdr binary URL is configured
+      assert:
+        that: powerpack_herdr_url | length > 0
+        fail_msg: "powerpack_install_herdr is true but powerpack_herdr_url is empty — set a prebuilt binary URL for this OS/arch."
+    - name: Download the herdr binary
+      get_url:
+        url: "{{ powerpack_herdr_url }}"
+        dest: "{{ powerpack_home }}/.local/bin/herdr"
+        mode: "0755"
+    - name: Ensure ~/.local/bin is on PATH
+      lineinfile:
+        path: "{{ powerpack_home }}/.bashrc"
+        line: 'export PATH="$HOME/.local/bin:$PATH"'
+        create: true
+  when: powerpack_install_herdr
+
+- name: Check whether the Powerpack is already installed
+  command: herdr plugin list --json
+  register: pp_list_existing
+  changed_when: false
+  failed_when: false
+  environment:
+    HOME: "{{ powerpack_home }}"
+
+- name: Install the pinned Powerpack plugin
+  command: herdr plugin install {{ powerpack_repo }}{% if powerpack_ref %} --ref {{ powerpack_ref }}{% endif %} -y
+  register: pp_install
+  changed_when: "'already' not in pp_install.stdout | default('')"
+  environment:
+    HOME: "{{ powerpack_home }}"
+    # Registry operations are client-side; avoid talking to any running server.
+    HERDR_SOCKET_PATH: ""
+    HERDR_ENV: ""
+  when: pp_list_existing.stdout | default('') | regex_search('berlinguyinca\.powerpack') is none

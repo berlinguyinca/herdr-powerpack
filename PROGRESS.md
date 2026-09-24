@@ -52,8 +52,14 @@ Visible checklist. Updated at every milestone.
 - [x] `tests/run-tests.sh`: **29/29 pass** (added integration-boundary detection test)
 - [x] bug fixed: `pipefail` + `grep` no-match made a `|| printf '[]'` fallback double-emit `[]` in the doctor JSON (removed the redundant fallback)
 
-## Phase 5 — Ansible / multi-host  ⬜ TODO
-- [ ] role: prereqs, ensure herdr, install pinned release, reconcile, doctor; Linux/macOS; headless degrade
+## Phase 5 — Ansible / multi-host  ✅ DONE
+- [x] `ansible/roles/herdr-powerpack/`: prereqs (per OS family), install herdr+pinned powerpack, reconcile, doctor
+- [x] host-agnostic (uses `ansible_os_family`/`ansible_architecture`; no hard-coded host names) — works on fry/beast/bender/macbook-m4
+- [x] Linux + macOS package handling; headless nodes degrade gracefully (doctor reports GUI caps degraded, not failed)
+- [x] private mobile bind enforced via `powerpack_mobile_bind` (loopback default; tailscale/lan options)
+- [x] optional toolchains (bun→roamgate, go→pr-board) off by default; strict-doctor gate optional
+- [x] `ansible/playbook.yml`, `group_vars/all.yml`, `README.md`
+- [x] `tests/run-tests.sh`: **32/32 pass** (added ansible YAML parse + host-agnostic + role structure tests)
 
 ## Phase 6 — Optional ecosystem  ⬜ TODO
 - [ ] evaluate tasks/dispatch/telegram/terminal-browser; add only if gap + no competing state

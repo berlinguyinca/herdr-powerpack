@@ -1,0 +1,37 @@
+---
+# herdr-powerpack role — defaults (override in group_vars / host_vars).
+# Host-agnostic: uses ansible_os_family / ansible_architecture, never host names.
+
+# Source of the Powerpack to install (the repo's own `herdr plugin install` source).
+powerpack_repo: berlinguyinca/herdr-powerpack
+# Pinned ref for reproducibility. Leave empty to install the repo default branch;
+# pin to a released SHA in group_vars for reproducible deploys.
+powerpack_ref: ""
+
+# Whether to install the `herdr` CLI itself. Default false (assume present on the fleet).
+# When true, `powerpack_herdr_url` must point at a suitable prebuilt binary.
+powerpack_install_herdr: false
+powerpack_herdr_url: ""
+
+# Run the full manage flow (install + reconcile + doctor) when true.
+powerpack_manage: true
+
+# Mobile/remote bind (private-by-default): loopback | tailscale | lan.
+powerpack_mobile_bind: loopback
+powerpack_mobile_port: 8787
+
+# Optional toolchain installs (the bundle degrades gracefully without them).
+powerpack_prereq_bun: false   # roamgate (mobile)
+powerpack_prereq_go: false    # pr-board (source build)
+
+# Fail the playbook if doctor --json --strict reports a critical issue.
+powerpack_strict_doctor: false
+
+# Optional (non-default) plugin ids to enable — written to the Powerpack's owned
+# enable.list. Example: ["quinnjr.herdr-notifications"] (desktop notifications).
+powerpack_enable: []
+
+# Directories the Powerpack uses (defaults per XDG).
+powerpack_home: "{{ ansible_env.HOME | default(ansible_user_dir | default('/root')) }}"
+powerpack_config_dir: "{{ powerpack_home }}/.config/herdr-powerpack"
+powerpack_state_dir: "{{ powerpack_home }}/.local/state/herdr-powerpack"

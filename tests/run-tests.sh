@@ -154,6 +154,35 @@ rm -f "$badlock"
 assert "bad update exits non-zero (smoke gate fired)" test "$rc" -ne 0
 assert "swarm restored after auto-rollback" reg_has structupath.swarm
 
+# --- Test 14: Ansible role YAML is valid (Phase 5) -------------------------
+echo "[14] ansible role: YAML parses (host-agnostic, pyyaml)"
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' >/dev/null 2>&1; then
+  ans_yaml_ok=$(python3 - "$ROOT" <<'PY'
+import yaml, glob, sys
+root=sys.argv[1]
+bad=[]
+for f in glob.glob(root+'/ansible/**/*.yml', recursive=True):
+    try: yaml.safe_load(open(f))
+    except Exception as e: bad.append((f,str(e)))
+for f,b in bad: print(f"{f}: {b}")
+sys.exit(1 if bad else 0)
+PY
+)
+  [ $? -eq 0 ] && ok "all ansible YAML files parse" || bad "ansible YAML invalid: $ans_yaml_ok"
+  # host-agnostic: the role LOGIC (tasks/vars/templates/playbook, non-comment)
+  # must not hard-code the fleet host names (docs may mention them as examples).
+  hardcoded=$(cat "$ROOT/ansible/roles/herdr-powerpack/tasks/"*.yml \
+      "$ROOT/ansible/roles/herdr-powerpack/vars/"*.yml "$ROOT/ansible/playbook.yml" \
+      "$ROOT/ansible/roles/herdr-powerpack/templates/"* 2>/dev/null \
+    | grep -vE '^\s*#' | grep -iE 'fry|beast|bender|macbook-m4' || true)
+  [ -z "$hardcoded" ] && ok "ansible role logic is host-agnostic (no hard-coded host names)" \
+    || bad "ansible role logic hard-codes a host name: $hardcoded"
+  test -f "$ROOT/ansible/roles/herdr-powerpack/tasks/main.yml" \
+    && ok "role has tasks/main.yml" || bad "role missing tasks/main.yml"
+else
+  echo "  SKIP (python3/pyyaml unavailable)"
+fi
+
 # --- Test 13: integration boundary (no competing state machine) ------------
 echo "[13] integration boundary (no competing task/dispatch state)"
 # (a) the current home has no competing-state plugin
