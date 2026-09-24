@@ -45,8 +45,12 @@ Visible checklist. Updated at every milestone.
 - [x] bugs found & fixed: lock top-level key is `dependencies` (not `deps`); state stores `default` as string `"true"` (smoke gate now compares the string)
 - [x] `tests/run-tests.sh`: **26/26 pass** (added update snapshot/accept, rollback restore, auto-rollback-on-regression)
 
-## Phase 4 — Pi Engineering integration  ⬜ TODO
-- [ ] expose capabilities without duplicating orchestration/state
+## Phase 4 — Pi Engineering integration  ✅ DONE
+- [x] `docs/integration-boundaries.md`: capability-provider, not orchestrator; Pi Engineering is the sole authoritative state owner
+- [x] Powerpack installs NO task/dispatch plugin; lock `rejected` set records the competing-state plugins (herdr-tasks, herdr-dispatch, herdr-tasks-board) + reasons
+- [x] **doctor guard**: `integration_check` cross-references live plugins (by `source.owner/repo`) against the lock's `rejected` set; flags any present competing-state plugin (`competing_state_plugins` in `--json`); human output shows the boundary status
+- [x] `tests/run-tests.sh`: **29/29 pass** (added integration-boundary detection test)
+- [x] bug fixed: `pipefail` + `grep` no-match made a `|| printf '[]'` fallback double-emit `[]` in the doctor JSON (removed the redundant fallback)
 
 ## Phase 5 — Ansible / multi-host  ⬜ TODO
 - [ ] role: prereqs, ensure herdr, install pinned release, reconcile, doctor; Linux/macOS; headless degrade

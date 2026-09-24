@@ -154,6 +154,22 @@ rm -f "$badlock"
 assert "bad update exits non-zero (smoke gate fired)" test "$rc" -ne 0
 assert "swarm restored after auto-rollback" reg_has structupath.swarm
 
+# --- Test 13: integration boundary (no competing state machine) ------------
+echo "[13] integration boundary (no competing task/dispatch state)"
+# (a) the current home has no competing-state plugin
+bash "$ROOT/scripts/doctor.sh" --json 2>/dev/null | jq -e '.competing_state_plugins == []' >/dev/null 2>&1 \
+  && ok "no competing-state plugin reported" || bad "unexpected competing-state plugin reported"
+# (b) the detection logic flags a synthetic competing-state live plugin
+( . "$ROOT/scripts/common.sh"
+  synthetic='[{"plugin_id":"matheusbbarni.tasks","source":{"kind":"github","owner":"MatheusBBarni","repo":"herdr-tasks"}}]'
+  integration_check "$synthetic" ) | grep -q 'COMPETING_STATE MatheusBBarni/herdr-tasks' \
+  && ok "detection flags a competing-state plugin (herdr-tasks)" || bad "detection did not flag herdr-tasks"
+# (c) a legitimate (non-rejected) plugin is not flagged
+( . "$ROOT/scripts/common.sh"
+  legit='[{"plugin_id":"structupath.swarm","source":{"kind":"github","owner":"StructuPath","repo":"herdr-swarm"}}]'
+  integration_check "$legit" ) | grep -q . \
+  && bad "legitimate plugin was flagged" || ok "legitimate plugin not flagged"
+
 # --- summary ----------------------------------------------------------------
 echo
 echo "=== summary: $PASS passed, $FAIL failed (HOME: $TESTHOME) ==="

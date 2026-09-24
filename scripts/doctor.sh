@@ -107,6 +107,13 @@ if [ "$JSON" = "1" ]; then
   if pp_have_jq; then
     local_deps_json="$(printf '%s' "$DEPS" | jq -cs '.' 2>/dev/null || printf '[]')"
     listeners="$(unsafe_listeners)"
+    integ="$(integration_check "$live_json")"
+    # NB: no '|| printf []' fallback — with pipefail, grep's no-match exit would
+    # append a second '[]' on top of jq -s' own empty-array output (invalid JSON).
+    comp_json="$(printf '%s\n' "$integ" | grep '^COMPETING_STATE' | sed 's/^COMPETING_STATE //' | jq -R . | jq -s 'map(select(length>0))' 2>/dev/null)"
+    [ -n "$comp_json" ] || comp_json="[]"
+    rej_json="$(printf '%s\n' "$integ" | grep '^REJECTED_PRESENT' | sed 's/^REJECTED_PRESENT //' | jq -R . | jq -s 'map(select(length>0))' 2>/dev/null)"
+    [ -n "$rej_json" ] || rej_json="[]"
     jq -cn \
       --arg os "$os" --arg arch "$(pp_arch)" --arg herdr "$herdrver" \
       --arg powerpack "${PP_POWERPACK_VERSION:-0.1.0}" \
@@ -115,9 +122,11 @@ if [ "$JSON" = "1" ]; then
       --argjson deps "$local_deps_json" \
       --arg listeners "$(printf '%s' "$listeners" | jq -R . | jq -s 'map(select(length>0))')" \
       --arg roamgate_bind "$(roamgate_bind)" \
+      --argjson comp "$comp_json" --argjson rej "$rej_json" \
       '{ok:true,schema:1,os:$os,arch:$arch,herdr_version:$herdr,powerpack_version:$powerpack,
         gh_authenticated:($ghauth=="true"),chromium_present:($chromium=="true"),
         roamgate_bind:$roamgate_bind,
+        competing_state_plugins:$comp, rejected_plugins_present:$rej,
         listeners_non_loopback:$listeners,deps:$deps,generated:$generated}'
   else
     printf 'jq not available; doctor --json requires jq\n' >&2
@@ -154,6 +163,16 @@ while IFS= read -r line; do
   fi
   printf '  %-30s %-10s %-11s %s\n' "$name" "$status" "$health" "$reason"
 done <<<"$DEPS"
+echo
+INTEG="$(integration_check "$live_json")"
+NCOMP=$(printf '%s\n' "$INTEG" | grep -c '^COMPETING_STATE' 2>/dev/null || echo 0)
+if [ "${NCOMP:-0}" -gt 0 ]; then
+  echo "  ⚠ competing task/dispatch state machine present (violates the single-authoritative-state boundary;"
+  echo "     Pi Engineering must remain the sole orchestrator) — see docs/integration-boundaries.md:"
+  printf '%s\n' "$INTEG" | grep '^COMPETING_STATE' | sed 's/^COMPETING_STATE /      /'
+else
+  echo "  ✓ no competing task/dispatch state machine (Pi Engineering remains the sole orchestrator)"
+fi
 echo
 RBIND="$(roamgate_bind)"
 case "$RBIND" in

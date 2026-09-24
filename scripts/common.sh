@@ -135,6 +135,30 @@ pp_configure_managed() {
   fi
 }
 
+# Integration-boundary check (Phase 4). The Powerpack must NOT own a competing
+# task/dispatch state machine. Cross-references the live plugins against the
+# lock's 'rejected' set (by owner/repo) and flags any rejected plugin that is
+# actually present. Competing-state plugins (tasks/dispatch/tasks-board) are the
+# hard boundary; other rejected plugins are reported for completeness.
+#   integration_check <live-json-array>
+# Prints lines: "COMPETING_STATE <repo>" or "REJECTED_PRESENT <repo>".
+integration_check() {
+  local live_json="${1:-}" rejected live_repos repo
+  rejected="$(jq -r '.rejected // [] | .[].repo' "$PP_LOCK_FILE" 2>/dev/null)"
+  [ -z "$rejected" ] && return 0
+  live_repos="$(printf '%s\n' "$live_json" | jq -r '.[] | select(.source.kind=="github") | "\(.source.owner)/\(.source.repo)"' 2>/dev/null)"
+  [ -z "$live_repos" ] && return 0
+  while IFS= read -r repo; do
+    [ -z "$repo" ] && continue
+    if printf '%s\n' "$live_repos" | grep -qxF "$repo"; then
+      case "$repo" in
+        *herdr-tasks*|*herdr-dispatch*|*tasks-board*) echo "COMPETING_STATE $repo" ;;
+        *) echo "REJECTED_PRESENT $repo" ;;
+      esac
+    fi
+  done <<<"$rejected"
+}
+
 # ---------------------------------------------------------------------------
 # Logging (honours POWERPACK_QUIET=1); secrets are redacted on stderr too
 # ---------------------------------------------------------------------------
