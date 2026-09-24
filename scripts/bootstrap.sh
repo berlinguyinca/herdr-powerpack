@@ -96,7 +96,6 @@ run
 pp_configure_managed
 
 if pp_have_jq && [ -f "$PP_STATE_FILE" ]; then
-  local_ok=0
   installed=$(jq -r '[.deps[]|select(.status=="installed" or .status=="up-to-date")]|length' "$PP_STATE_FILE" 2>/dev/null || echo 0)
   skipped=$(jq -r '[.deps[]|select(.status=="skipped")]|length' "$PP_STATE_FILE" 2>/dev/null || echo 0)
   failed=$(jq -r '[.deps[]|select(.status=="failed")]|length' "$PP_STATE_FILE" 2>/dev/null || echo 0)

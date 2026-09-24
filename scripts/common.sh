@@ -17,6 +17,7 @@ PP_STATE_DIR="${POWERPACK_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/herdr
 PP_CONFIG_DIR="${POWERPACK_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr-powerpack}"
 PP_STATE_FILE="$PP_STATE_DIR/reconcile.json"
 PP_ENV_FILE="$PP_STATE_DIR/env.json"
+# shellcheck disable=SC2034 # written into owned config files by bootstrap.sh (used cross-file)
 PP_OWNERSHIP_MARKER="# managed by berlinguyinca.powerpack — do not edit by hand"
 PP_POWERPACK_VERSION="${PP_POWERPACK_VERSION:-$(awk -F'"' '/^version[[:space:]]*=/{print $2; exit}' "$PP_PLUGIN_ROOT/herdr-plugin.toml" 2>/dev/null)}"
 [ -n "$PP_POWERPACK_VERSION" ] || PP_POWERPACK_VERSION="0.1.0"

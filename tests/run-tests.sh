@@ -216,6 +216,17 @@ else
   echo "  SKIP (no Rust toolchain on this host)"
 fi
 
+# --- Test 16: shellcheck static analysis (best-effort) --------------------
+echo "[16] shellcheck static analysis (best-effort)"
+if command -v shellcheck >/dev/null 2>&1; then
+  sc_issues=$(shellcheck -x -f gcc "$ROOT"/scripts/*.sh 2>/dev/null | grep -E "error:|warning:" | head -5)
+  [ -z "$sc_issues" ] \
+    && ok "no shellcheck errors/warnings in scripts" \
+    || bad "shellcheck: $sc_issues"
+else
+  echo "  SKIP (shellcheck not installed)"
+fi
+
 # --- Test 13: integration boundary (no competing state machine) ------------
 echo "[13] integration boundary (no competing task/dispatch state)"
 # (a) the current home has no competing-state plugin

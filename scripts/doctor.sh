@@ -77,7 +77,7 @@ build_deps() {
     elif is_live "$id"; then
       # installed -> assess health via runtime prereqs
       status="installed"; health="healthy"; reason=""
-      local rp; local missingrt=""
+      local rp
       while IFS= read -r rp; do
         [ -z "$rp" ] && continue
         if [ "$rp" = "gh" ] && [ "$ghauth" = "false" ]; then health="degraded"; reason="gh not authenticated"; continue; fi
