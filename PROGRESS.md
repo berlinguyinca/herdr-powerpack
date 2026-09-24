@@ -61,12 +61,19 @@ Visible checklist. Updated at every milestone.
 - [x] `ansible/playbook.yml`, `group_vars/all.yml`, `README.md`
 - [x] `tests/run-tests.sh`: **32/32 pass** (added ansible YAML parse + host-agnostic + role structure tests)
 
-## Phase 6 — Optional ecosystem  ⬜ TODO
-- [ ] evaluate tasks/dispatch/telegram/terminal-browser; add only if gap + no competing state
+## Phase 6 — Optional ecosystem  ✅ DONE
+- [x] `docs/optional-ecosystem.md`: OPTIONAL (notifications/telegram/terminal-browser) vs HOLD (plannotator) vs REJECTED (tasks/dispatch/tasks-board) + rationale
+- [x] rule: fill a gap + no competing state machine; task/dispatch remain the hard boundary
+- [x] lock reflects decisions (optional deps default:false; competing-state rejected)
+
+## Line-by-line spec comparison
+- [x] `docs/spec-compliance.md`: maps every spec requirement -> implementation -> status
+- [x] intentionally deferred (with reasons): live browser launch/attach (no display), live swarm fan-out (needs a project), Plannotator smoke (HOLD — broken upstream), live Ansible run (needs fleet)
 
 ## Acceptance tests (spec 08)
-- [ ] 1 clean install  - [ ] 2 install-over-config  - [ ] 3 idempotency
-- [ ] 4 browser launch/attach  - [ ] 5 local-site inspection  - [ ] 6 mobile private binding
-- [ ] 7 plannotator smoke  - [ ] 8 worktree/swarm  - [ ] 9 github auth/no-auth
-- [ ] 10 optional-failure isolation  - [ ] 11 incompatible-update block  - [ ] 12 rollback
-- [ ] 13 uninstall preservation  - [ ] 14 doctor human + machine output
+- [x] 1 clean install  - [x] 2 install-over-config  - [x] 3 idempotency
+- [ ] 4 browser launch/attach  - [ ] 5 local-site inspection  - [x] 6 mobile private binding
+- [ ] 7 plannotator smoke  - [ ] 8 worktree/swarm  - [x] 9 github auth/no-auth
+- [x] 10 optional-failure isolation  - [x] 11 incompatible-update block  - [x] 12 rollback
+- [x] 13 uninstall preservation  - [x] 14 doctor human + machine output
+- [ ] (deferred 4/5/7/8: no display/project in this env, or HOLD upstream — see spec-compliance.md)
