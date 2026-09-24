@@ -89,6 +89,19 @@ pp_ver_ge() {
 
 pp_have() { command -v "$1" >/dev/null 2>&1; }
 
+# Make a usable rustup environment for cargo-based deps (e.g. notifications).
+# Rustup's default toolchain lives under ~/.rustup, so a redirected HOME makes
+# cargo think no default is configured. Production (real HOME) needs nothing;
+# this hardens odd-HOME cases and the test harness (which points RUSTUP_HOME at
+# the real toolchain to simulate a host that has Rust).
+pp_ensure_rustup_env() {
+  [ -z "${RUSTUP_HOME:-}" ] && [ -d "$HOME/.rustup" ] && export RUSTUP_HOME="$HOME/.rustup"
+  if [ -z "${RUSTUP_TOOLCHAIN:-}" ] && command -v rustup >/dev/null 2>&1; then
+    local t; t="$(rustup show active-toolchain 2>/dev/null | awk '{print $1}')"
+    [ -n "$t" ] && export RUSTUP_TOOLCHAIN="$t"
+  fi
+}
+
 # The node's Tailscale IPv4 (best-effort; empty if tailscale absent/not up).
 pp_tailscale_ip() {
   command -v tailscale >/dev/null 2>&1 || return 1
@@ -359,6 +372,8 @@ pp_process_dep() {
 
   # 6) install (best-effort)
   if [ -z "$hb" ]; then status="failed"; reason="herdr binary not found"; _pp_emit_final; return 0; fi
+  # For cargo-based deps, ensure rustup can resolve a default toolchain.
+  if jq -e '.install_hook // "" | test("cargo")' <<<"$dep" >/dev/null 2>&1; then pp_ensure_rustup_env; fi
   local out rc
   out=$(pp_herdr_cli plugin install "$install_src" --ref "$ref" -y 2>&1); rc=$?
   if [ $rc -eq 0 ]; then

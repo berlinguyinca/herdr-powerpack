@@ -25,6 +25,15 @@ KEEP=0; [ "${1:-}" = "--keep" ] && KEEP=1
 DEPS="${POWERPACK_TEST_DEPS:-structupath.swarm,serhii-chernenko.worktreeinclude,structupath.browser,roamgate,jonasbaeumer.file-annotator}"
 
 TESTHOME="$(mktemp -d "${TMPDIR:-/tmp}/pp-test.XXXXXX")"
+# Capture the REAL rustup home before overriding HOME (notifications is a cargo dep;
+# rustup's default toolchain lives under ~/.rustup, so an isolated HOME would otherwise
+# make cargo think no default is configured). Point RUSTUP_HOME at the real toolchain
+# to simulate a host that has Rust.
+REAL_RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+[ -d "$REAL_RUSTUP_HOME" ] || REAL_RUSTUP_HOME=""
+REAL_RUSTUP_TOOLCHAIN="${RUSTUP_TOOLCHAIN:-}"
+[ -z "$REAL_RUSTUP_TOOLCHAIN" ] && command -v rustup >/dev/null 2>&1 && \
+  REAL_RUSTUP_TOOLCHAIN="$(rustup show active-toolchain 2>/dev/null | awk '{print $1}')"
 export HOME="$TESTHOME"
 export XDG_CONFIG_HOME="$TESTHOME/.config"
 export XDG_DATA_HOME="$TESTHOME/.local/share"
@@ -181,6 +190,30 @@ PY
     && ok "role has tasks/main.yml" || bad "role missing tasks/main.yml"
 else
   echo "  SKIP (python3/pyyaml unavailable)"
+fi
+
+# --- Test 15: notifications (cargo dep) installs when a Rust toolchain exists ---
+echo "[15] notifications: desktop notifications install + binary builds (Rust host)"
+if [ -n "$REAL_RUSTUP_HOME" ] && command -v cargo >/dev/null 2>&1; then
+  # fresh isolated home, notifications only, with the real rustup toolchain exposed
+  H2="$(mktemp -d "${TMPDIR:-/tmp}/pp-notif.XXXXXX")"
+  ( export HOME="$H2" XDG_CONFIG_HOME="$H2/.config" XDG_STATE_HOME="$H2/.local/state" \
+         XDG_DATA_HOME="$H2/.local/share" XDG_CACHE_HOME="$H2/.cache" \
+         POWERPACK_ONLY="quinnjr.herdr-notifications" POWERPACK_AUTO_PREREQS=0 \
+         RUSTUP_HOME="$REAL_RUSTUP_HOME" RUSTUP_TOOLCHAIN="$REAL_RUSTUP_TOOLCHAIN"
+    bash "$ROOT/scripts/bootstrap.sh" >/dev/null 2>&1
+    st="$XDG_STATE_HOME/herdr-powerpack/reconcile.json"
+    status="$(jq -r '.deps[]|select(.id=="quinnjr.herdr-notifications")|.status' "$st" 2>/dev/null)"
+    bin=$(find "$XDG_CONFIG_HOME/herdr/plugins/github" -name herdr-notifications -path '*/target/release/*' 2>/dev/null | head -1)
+    printf '%s' "$status"; echo "; bin=$([ -n "$bin" ] && echo yes || echo no)"
+  ) > "$TESTHOME/notif.result"
+  nres="$(cat "$TESTHOME/notif.result")"
+  nstatus="$(printf '%s' "$nres" | cut -d';' -f1)"; nbin="$(printf '%s' "$nres" | cut -d= -f2)"
+  [ "$nstatus" = "installed" ] && ok "notifications status=installed (Rust host)" || bad "notifications status=$nstatus (want installed)"
+  [ "$nbin" = "yes" ] && ok "notifications binary built (target/release)" || bad "notifications binary not built"
+  rm -rf "$H2" "$TESTHOME/notif.result" 2>/dev/null
+else
+  echo "  SKIP (no Rust toolchain on this host)"
 fi
 
 # --- Test 13: integration boundary (no competing state machine) ------------

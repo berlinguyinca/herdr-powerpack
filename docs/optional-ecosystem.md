@@ -10,9 +10,13 @@ The Powerpack ships a small default bundle and keeps the rest of the ecosystem
 
 | Plugin | What it adds | Prereq / note | Enable |
 | --- | --- | --- | --- |
-| `quinnjr.herdr-notifications` | native OS desktop notifications | must `cargo build`; Herdr's sandboxed build env may not resolve a rustup default toolchain → not on all hosts | `enable.list` |
 | `barnuri/herdr-notifications` | **Telegram** notifications | needs a **bot token (secret)** + outbound network | `enable.list` |
 | `zenbu-labs/terminal-browser` | terminal browser | downloads via an install script (Electron) | `enable.list` |
+
+> `quinnjr/herdr-notifications` (native OS desktop notifications) was briefly made
+> optional during Phase 2, but that was an isolated-HOME test artifact (rustup's default
+> toolchain lives under `~/.rustup`); with the real HOME it builds fine and is **default**
+> again. It needs a working Rust toolchain and is a no-op on headless.
 
 These are not defaults because they are either build/toolchain-heavy, need a
 secret, or download extra runtimes — but they add real capability with no

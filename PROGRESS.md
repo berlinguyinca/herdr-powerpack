@@ -66,6 +66,11 @@ Visible checklist. Updated at every milestone.
 - [x] rule: fill a gap + no competing state machine; task/dispatch remain the hard boundary
 - [x] lock reflects decisions (optional deps default:false; competing-state rejected)
 
+## Post-implementation fix — notifications (user: "notifications are fun")
+- [x] root cause: rustup's default toolchain lives under `~/.rustup`; an isolated-HOME test made cargo think no default was configured (production with real HOME builds fine)
+- [x] notifications **re-enabled as default**; Powerpack sets `RUSTUP_HOME`/`RUSTUP_TOOLCHAIN` for cargo deps (`pp_ensure_rustup_env`)
+- [x] verified: full default bundle now installs notifications (7 installed, 0 failed); harness **34/34 pass** (added Test 15: notifications install + binary builds on a Rust host)
+
 ## Line-by-line spec comparison
 - [x] `docs/spec-compliance.md`: maps every spec requirement -> implementation -> status
 - [x] intentionally deferred (with reasons): live browser launch/attach (no display), live swarm fan-out (needs a project), Plannotator smoke (HOLD — broken upstream), live Ansible run (needs fleet)

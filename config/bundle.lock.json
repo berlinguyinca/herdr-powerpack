@@ -157,11 +157,11 @@
       "install_prereqs": ["cargo"],
       "runtime_prereqs": [],
       "license": "MIT",
-      "default": false,
+      "default": true,
       "install_hook": "cargo build --release",
       "startup_hook": "none",
-      "security_notes": "Native OS desktop notifications on agent blocked/done (deduped). No network, no secrets. OPTIONAL/opt-in (default=false): it must COMPILE and HerdR runs build hooks in a sandboxed environment where a rustup default toolchain may not resolve, so it cannot build on hosts without that setup; kept out of defaults so they install green (it is a no-op on headless anyway). Enable per-host to use it.",
-      "verified": "2026-09-21"
+      "security_notes": "Native OS desktop notifications on agent blocked/done (deduped). No network, no secrets. DEFAULT again (the earlier demotion was an isolated-HOME test artifact: rustup's default toolchain lives under ~/.rustup, so a redirected HOME made cargo think no default was configured; with the real HOME it builds fine). The Powerpack sets RUSTUP_HOME/RUSTUP_TOOLCHAIN for cargo deps so it builds even when HOME differs. No-op on headless (no notification backend). Requires a working Rust toolchain (cargo); skips/degrades otherwise.",
+      "verified": "2026-09-22"
     },
     {
       "id": "zenbu-labs.terminal-browser",

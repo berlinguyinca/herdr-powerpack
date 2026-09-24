@@ -183,16 +183,17 @@ unauthenticated states."
 
 | Repo | Stars | id | min_herdr | Decision |
 | --- | --- | --- | --- | --- |
-| `quinnjr/herdr-notifications` | 1 | `quinnjr.herdr-notifications` | 0.7.0 | **OPTIONAL** (desktop; opt-in) |
+| `quinnjr/herdr-notifications` | 1 | `quinnjr.herdr-notifications` | 0.7.0 | **ADOPT** (desktop) |
 | `barnuri/herdr-notifications` | 1 | (JS) | — | **OPTIONAL** (Telegram) |
 
-- **OPTIONAL `quinnjr/herdr-notifications`**: native **OS desktop** notifications on
+- **ADOPT `quinnjr/herdr-notifications`** (default): native **OS desktop** notifications on
   `pane.agent_status_changed` (blocked/done only, deduped). No network, no secrets.
-  **Phase 2 finding → demoted from default to opt-in:** it has **no prebuilt binary** and
-  must `cargo build --release`; **HerdR runs build hooks in a sandboxed environment where a
-  rustup default toolchain may not resolve**, so it fails to build on hosts without that
-  setup (verified on this host). Keeping it out of the default bundle lets all defaults
-  install green; it is a no-op on headless anyway. Enable per-host to use it.
+  Build = `cargo build --release`; no prebuilt binary, so it needs a working Rust toolchain.
+  **Phase 2+ correction:** the earlier "can't build under HerdR" finding was an **isolated-HOME
+  test artifact** — rustup's default toolchain lives under `~/.rustup`, so a redirected HOME
+  made cargo think no default was configured. With the real HOME it builds fine (verified).
+  The Powerpack sets `RUSTUP_HOME`/`RUSTUP_TOOLCHAIN` for cargo deps so it builds robustly;
+  it degrades (skips) on hosts without a working Rust toolchain, and is a no-op on headless.
 - **OPTIONAL `barnuri/herdr-notifications`**: **Telegram** notifications on idle/blocked/
   done. Needs a **bot token (secret)** + outbound network → **disabled by default**,
   user-configured, never written to logs/UI.
@@ -246,9 +247,9 @@ ADOPT (enabled by default when prereqs are met):
 - `serhii-chernenko.worktreeinclude`
 - `jonasbaeumer.file-annotator`
 - `herdr-gh-checks`, `cdowell09.pr-board` — degrade when unauthenticated
+- `quinnjr.herdr-notifications` (desktop; needs a working Rust toolchain)
 
 OPTIONAL (disabled by default):
-- `quinnjr.herdr-notifications` (desktop; opt-in — must compile, and Herdr's sandboxed build env may not resolve a rustup default toolchain, so it can't build on all hosts)
 - `zenbu-labs.terminal-browser`
 - `barnuri/herdr-notifications` (Telegram; needs token)
 

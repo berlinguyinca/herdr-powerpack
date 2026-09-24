@@ -23,7 +23,7 @@ listed at the end with a concrete reason.
 | mobile: `powerfooI/roamgate` (eyalev/herdr-web superseded) | ADOPT (corrected) |
 | Plannotator | HOLD (broken upstream dep) |
 | swarm, worktreeinclude, file-annotator, gh-checks, pr-board | ADOPT |
-| notifications: quinnjr | OPTIONAL (demoted — compile-only; Herdr sandboxed build env) |
+| notifications: quinnjr | ADOPT (default; the earlier demotion was an isolated-HOME test artifact — rustup default lives in ~/.rustup) |
 | Telegram, terminal-browser | OPTIONAL |
 | tasks, dispatch, tasks-board | REJECTED (competing state / no license) |
 
@@ -85,6 +85,7 @@ listed at the end with a concrete reason.
 | 8 worktree/swarm smoke | PARTIAL (installed; live fan-out not run — would touch a worktree) |
 | 9 GitHub auth/no-auth | DONE (gh-checks degrade when unauthenticated; gh auth state reported) |
 | 10 optional failure isolation | DONE (test 4) |
+| 15 (added) desktop notifications install + binary builds | DONE (test 15; cargo dep via rustup env) |
 | 11 incompatible update blocked | DONE (test 12) |
 | 12 failed update restores known-good | DONE (test 12 auto-rollback) |
 | 13 uninstall preserves unrelated | DONE (documented; ownership-aware) |

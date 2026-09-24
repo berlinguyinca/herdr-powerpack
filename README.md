@@ -31,7 +31,7 @@ Swarm | `StructuPath/herdr-swarm` | worktree-per-agent fan-out, review-first har
 Worktrees | `serhii-chernenko/herdr-worktreeinclude` | project-local worktrees + `.worktreeinclude`
 File review | `JonasBaeumer/herdr-file-annotator` | agent-summoned blocking diff review (MCP)
 GitHub / CI | `itisbryan/herdr-gh-checks`, `cdowell09/herdr-pr-board` | degrade (not fail) when unauthenticated
-Desktop notifications | `quinnjr/herdr-notifications` | native OS notifications, no network
+Desktop notifications | `quinnjr/herdr-notifications` | native OS notifications, no network (needs a working Rust toolchain)
 
 Optional (disabled by default): `zenbu-labs/terminal-browser`, `barnuri/herdr-notifications`
 (Telegram). Hold: `plannotator/herdr-plannotator` (see audit). Rejected: task/dispatch
