@@ -71,6 +71,12 @@ Visible checklist. Updated at every milestone.
 - [x] notifications **re-enabled as default**; Powerpack sets `RUSTUP_HOME`/`RUSTUP_TOOLCHAIN` for cargo deps (`pp_ensure_rustup_env`)
 - [x] verified: full default bundle now installs notifications (7 installed, 0 failed); harness **34/34 pass** (added Test 15: notifications install + binary builds on a Rust host)
 
+## Post-implementation fix — review capability replacement (user: implement replacement recommendations)
+- [x] **`persiyanov/herdr-reviewr`** (MIT, active, v0.39.0, min_herdr 0.7.5) adopted as the **default review capability**, replacing the held (broken) Plannotator
+- [x] verified: installs cleanly on HerdR 0.9.1; **checksum-verified prebuilt binary** (no Rust build, no runtime network); diff review + line comments back to the agent; auto-opens on worktree.created/opened (composes with swarm)
+- [x] full default bundle now installs **8 deps, 0 failed** (browser, mobile-degrades, swarm, worktree, file-annotator, gh-checks, pr-board, notifications, reviewr); harness **34/34 pass**
+- [x] docs updated: audit (reviewr ADOPT, Plannotator HOLD w/ replacement), integration-boundaries, optional-ecosystem, README, spec-compliance
+
 ## Line-by-line spec comparison
 - [x] `docs/spec-compliance.md`: maps every spec requirement -> implementation -> status
 - [x] intentionally deferred (with reasons): live browser launch/attach (no display), live swarm fan-out (needs a project), Plannotator smoke (HOLD — broken upstream), live Ansible run (needs fleet)

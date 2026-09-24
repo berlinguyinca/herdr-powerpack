@@ -21,7 +21,7 @@ listed at the end with a concrete reason.
 | --- | --- |
 | browser: `StructuPath/herdr-browser` (ogulcancelik deprecated) | ADOPT (corrected) |
 | mobile: `powerfooI/roamgate` (eyalev/herdr-web superseded) | ADOPT (corrected) |
-| Plannotator | HOLD (broken upstream dep) |
+| Plannotator | HOLD (broken upstream dep); **replacement**: `persiyanov/herdr-reviewr` ADOPT (diff review) |
 | swarm, worktreeinclude, file-annotator, gh-checks, pr-board | ADOPT |
 | notifications: quinnjr | ADOPT (default; the earlier demotion was an isolated-HOME test artifact — rustup default lives in ~/.rustup) |
 | Telegram, terminal-browser | OPTIONAL |
@@ -117,7 +117,8 @@ listed at the end with a concrete reason.
   fan-out would mutate a real worktree and needs a project. The Powerpack's integration
   (install/health) is validated; the fan-out semantics belong to upstream `herdr-swarm`.
 - **Plannotator smoke (test 7):** **HOLD** — upstream is non-functional (hard-coded
-  dependency on the deprecated `official.browser`). Deferred until the upstream fixes it;
-  not a Powerpack defect.
+  dependency on the deprecated `official.browser`). The diff-review capability is now
+  covered by **`persiyanov/herdr-reviewr`** (adopted, default, installs on HerdR 0.9.1).
+  Plannotator itself remains deferred until the upstream fixes it; not a Powerpack defect.
 - **Live Ansible run against the 4 hosts:** the role is written and YAML-validated, but a
   live deploy requires the fleet. Deferred to the operator.

@@ -218,8 +218,28 @@
       "hold": true,
       "install_hook": "bun install --frozen-lockfile",
       "startup_hook": "none",
-      "security_notes": "HOLD: hard-codes BROWSER_PLUGIN_ID=official.browser, which no maintained browser currently registers (the provider ogulcancelik/herdr-browser is deprecated). Non-functional out-of-the-box. Promote to default when upstream repoints to a maintained browser. Requires bun + a browser.",
+      "security_notes": "HOLD: hard-codes BROWSER_PLUGIN_ID=official.browser, which no maintained browser currently registers (the provider ogulcancelik/herdr-browser is deprecated). Non-functional out-of-the-box. The review capability is now provided by persiyanov/herdr-reviewr (default); promote plannotator only if upstream repoints to a maintained browser. Requires bun + a browser.",
       "verified": "2026-09-21"
+    },
+    {
+      "id": "persiyanov.reviewr",
+      "name": "reviewr (diff review)",
+      "capability": "review",
+      "repo": "persiyanov/herdr-reviewr",
+      "subdir": null,
+      "ref": "cd618b48dc1f4d2cc092f3f26827ac72fb44773e",
+      "version": "0.39.0",
+      "min_herdr_version": "0.7.5",
+      "platforms": ["linux", "macos"],
+      "install_prereqs": [],
+      "runtime_prereqs": [],
+      "license": "MIT",
+      "default": true,
+      "hold": false,
+      "install_hook": "downloads checksum-verified prebuilt binary (bash herdr/install.sh; sha256 sidecar from the pinned release tag)",
+      "startup_hook": "none (reviewr pane auto-opens on worktree.created/opened)",
+      "security_notes": "Diff review + file viewer + line comments back to the agent. Prebuilt binary downloaded from the pinned release and SHA-256 verified (fails closed on mismatch). No Rust build, no network at runtime, no persistent exposure. Replaces the held Plannotator as the default review capability.",
+      "verified": "2026-09-22"
     }
   ],
   "rejected": [

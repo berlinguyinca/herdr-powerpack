@@ -26,7 +26,7 @@ state-machine conflict.
 
 | Plugin | Why held | Promotion path |
 | --- | --- | --- |
-| `plannotator/herdr-plannotator` | not currently functional (hard-coded `official.browser` dependency on a **deprecated** plugin) | promote to ADOPT when the upstream drops the deprecated dependency |
+| `plannotator/herdr-plannotator` | not currently functional (hard-coded `official.browser` dependency on a **deprecated** plugin) | promote to ADOPT when the upstream drops the deprecated dependency (meanwhile `persiyanov/herdr-reviewr` covers the diff-review capability) |
 
 ## REJECTED (never installed by the Powerpack)
 

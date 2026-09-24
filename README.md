@@ -30,12 +30,14 @@ Mobile / web | `powerfooI/roamgate` | full desktop+mobile PWA client; **private-
 Swarm | `StructuPath/herdr-swarm` | worktree-per-agent fan-out, review-first harvest
 Worktrees | `serhii-chernenko/herdr-worktreeinclude` | project-local worktrees + `.worktreeinclude`
 File review | `JonasBaeumer/herdr-file-annotator` | agent-summoned blocking diff review (MCP)
+Diff review | `persiyanov/herdr-reviewr` | diff/file viewer + line comments back to the agent (replaces held Plannotator)
 GitHub / CI | `itisbryan/herdr-gh-checks`, `cdowell09/herdr-pr-board` | degrade (not fail) when unauthenticated
 Desktop notifications | `quinnjr/herdr-notifications` | native OS notifications, no network (needs a working Rust toolchain)
 
 Optional (disabled by default): `zenbu-labs/terminal-browser`, `barnuri/herdr-notifications`
-(Telegram). Hold: `plannotator/herdr-plannotator` (see audit). Rejected: task/dispatch
-plugins (competing state models / no license).
+(Telegram). Hold: `plannotator/herdr-plannotator` (see audit) — its review capability is
+covered by `persiyanov/herdr-reviewr`. Rejected: task/dispatch plugins (competing state
+models / no license).
 
 Full reasoning and every ADOPT/OPTIONAL/ADAPT/HOLD/REJECT decision: **[`docs/upstream-audit.md`](docs/upstream-audit.md)**.
 

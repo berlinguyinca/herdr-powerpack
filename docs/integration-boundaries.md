@@ -11,8 +11,9 @@ with the systems that already own them.
 | --- | --- | --- |
 | Orchestration, policy, missions, work items | **Pi Engineering** (`berlinguyinca/pi-engineering`) | none — exposes capabilities Pi Engineering can consume |
 | Spec / issue workflow | **AutoSpec** (`berlinguyinca/autospec`) | none |
-| Review semantics | **Plannotator** | none (the Plannotator bridge is **HOLD** — see audit) |
+| Review semantics | **Plannotator** | the Plannotator bridge is **HOLD** (broken); the **diff-review** capability is provided by `persiyanov/herdr-reviewr` (default) |
 | Browser / QA surface | upstream `StructuPath/herdr-browser` | installs + health-checks it; no re-implementation |
+| Diff review / file viewer | upstream `persiyanov/herdr-reviewr` | installs it; comment-on-diff → agent |
 | Mobile / remote surface | upstream `powerfooI/roamgate` | installs it **and owns its bind config** (loopback by default) |
 | Worktree fan-out / harvest | upstream `StructuPath/herdr-swarm` | installs it |
 | GitHub / CI visibility | upstream `herdr-gh-checks`, `herdr-pr-board` | installs them |

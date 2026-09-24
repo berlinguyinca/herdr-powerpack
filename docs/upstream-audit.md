@@ -83,11 +83,21 @@ Prereqs: Node ≥ 20 (present). `agent-browser` (vercel-labs) is optional — re
 for shared sessions / recording / saved QA scenarios; the Powerpack installs it when the
 browser's QA capability is enabled.
 
-## 3. Plannotator bridge
+## 3. Plannotator bridge + review capability
 
 | Repo | Stars | id | min_herdr | Decision |
 | --- | --- | --- | --- | --- |
 | `plannotator/herdr-plannotator` | 26 | `official.plannotator` | 0.7.5 | **HOLD** |
+| `persiyanov/herdr-reviewr` | 765 | `persiyanov.reviewr` | 0.7.5 | **ADOPT** (review) |
+
+**ADOPT `persiyanov/herdr-reviewr`** (default, v0.39.0, min_herdr 0.7.5, linux/macos):
+code-review + file-viewer sidebar that comments on a diff and sends the comments back to
+the agent. This is the **replacement for Plannotator's review capability** while Plannotator
+is HOLD (broken). MIT, actively maintained (updated 2026-09-24), downloads a
+**checksum-verified prebuilt binary** from a pinned release tag (`bash herdr/install.sh`,
+sha256 sidecar, fails closed) — no Rust build, no network at runtime. Auto-opens its pane on
+`worktree.created/opened`, so it composes with swarm/worktrees. Not a task/dispatch state
+machine, so it respects the single-authoritative-state boundary.
 
 **Why HOLD (verified, not speculative):** `src/constants.ts` hard-codes
 `BROWSER_PLUGIN_ID = "official.browser"` and opens it via
@@ -229,7 +239,10 @@ unauthenticated states."
    deprecation must not be missed.
 2. **Plannotator:** `plannotator/herdr-plannotator` is **not currently functional**
    (hard-coded `official.browser` dependency on a deprecated plugin) → **HOLD**, not
-   ADOPT, with a documented promotion path.
+   ADOPT, with a documented promotion path. **Replacement:** the review capability is
+   provided by **`persiyanov/herdr-reviewr`** (default), a well-maintained, checksum-verified
+   prebuilt binary — no fork of Plannotator, and Plannotator's own plan/review semantics
+   stay untouched.
 3. **Mobile:** the spec's `eyalev/herdr-web` is **superseded**; the correct choice is
    `powerfooI/roamgate` (230★, private-by-default).
 4. **Telegram:** the spec's `barnuri/herdr-telegram-notifications` **does not exist**;
@@ -248,6 +261,7 @@ ADOPT (enabled by default when prereqs are met):
 - `jonasbaeumer.file-annotator`
 - `herdr-gh-checks`, `cdowell09.pr-board` — degrade when unauthenticated
 - `quinnjr.herdr-notifications` (desktop; needs a working Rust toolchain)
+- `persiyanov.reviewr` (diff review; prebuilt binary) — replaces held Plannotator
 
 OPTIONAL (disabled by default):
 - `zenbu-labs.terminal-browser`
