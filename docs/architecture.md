@@ -137,7 +137,7 @@ herdr-powerpack/
     security.md
     troubleshooting.md
   ansible/
-    roles/powerpack/…         # prereqs, ensure herdr, install pinned release, reconcile, doctor
+    roles/herdr-powerpack/…   # prereqs, ensure herdr, install pinned release, reconcile, doctor
   tests/
     run-tests.sh              # harness (uses herdr plugin link against a temp HOME)
     *.bats or *.sh            # the 14 acceptance scenarios

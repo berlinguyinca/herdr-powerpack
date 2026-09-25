@@ -165,7 +165,7 @@ while IFS= read -r line; do
 done <<<"$DEPS"
 echo
 INTEG="$(integration_check "$live_json")"
-NCOMP=$(printf '%s\n' "$INTEG" | grep -c '^COMPETING_STATE' 2>/dev/null || echo 0)
+NCOMP=$(printf '%s\n' "$INTEG" | grep -c '^COMPETING_STATE' 2>/dev/null || true)
 if [ "${NCOMP:-0}" -gt 0 ]; then
   echo "  ⚠ competing task/dispatch state machine present (violates the single-authoritative-state boundary;"
   echo "     Pi Engineering must remain the sole orchestrator) — see docs/integration-boundaries.md:"
