@@ -1,152 +1,145 @@
 # HerdR Powerpack
 
-A **thin HerdR meta-plugin / distribution**. One install gives a HerdR
-installation a curated, tested capability bundle by **adopting existing upstream
-HerdR plugins** — never re-implementing them.
+> One install turns a bare HerdR into a full **agent capability bundle**: real
+> Chromium browser, mobile/web client, worktree swarm fan-out, code review, GitHub/CI
+> visibility, and native desktop notifications — all from a **thin meta-plugin** that
+> adopts well-maintained **upstream** HerdR plugins rather than re-implementing them.
 
+## What it is
+
+**HerdR Powerpack** is a curated, tested distribution for HerdR (the runtime coding agents
+live on). Instead of hunting down and hand-managing a dozen plugins, you install one and
+get a coherent, version-locked set that composes cleanly: the browser drives QA, swarm
+fans out work into per-agent worktrees, the file/diff reviewers give the agent review
+feedback, gh-checks/pr-board surface CI status, roamgate gives you a private mobile/web
+client, and notifications ping you natively. Every capability is pinned to an exact
+commit SHA in `config/bundle.lock.json` (the lock is the source of truth — upstream
+`HEAD` is never followed), degrades gracefully when a toolchain is missing, and is
+guarded by a `doctor` health matrix.
+
+The Powerpack **owns the plumbing, not the engines**: its `scripts/` provide
+`bootstrap` (install), `reconcile` (self-heal), `doctor` (health), `update` (snapshot +
+re-pin + smoke gate), `rollback` (restore known-good), `versions`, and a `board` pane.
+Everything heavy — the browser, mobile, review, GitHub clients — is an upstream plugin.
+
+```bash
+# example: the health matrix after a clean install
+$ herdr plugin action invoke berlinguyinca.powerpack.doctor
+HerdR Powerpack — doctor
+  herdr:       0.9.1   os: linux/x86_64   powerpack: 0.1.0
+  CAPABILITY                     STATUS     HEALTH
+  Browser (CDP/QA)               installed  healthy
+  Swarm (worktree fan-out)       installed  healthy
+  Project-local Worktrees        installed  healthy
+  File Annotator (blocking diff) installed  healthy
+  Desktop Notifications          installed  healthy
+  reviewr (diff review)          installed  healthy
+  GH Checks / PR Board           installed  degraded   (gh not authenticated)
+  Roamgate (mobile)              missing    missing     (no bun — degrades gracefully)
+  Plannotator                    held       held
+  ✓ no competing task/dispatch state machine
+  ✓ no non-loopback listeners detected
 ```
+
+## Install (standalone)
+
+```bash
+curl -fsSL https://herdr.dev/install.sh | sh   # only if you don't have herdr yet
 herdr plugin install berlinguyinca/herdr-powerpack
 ```
 
-The Powerpack stays thin. It owns:
+That's it. The build hook installs every locked upstream at its pinned SHA **best-effort**
+— a missing toolchain (e.g. `bun`, `cargo`) skips a capability rather than failing the
+install. Check health with `herdr plugin action invoke berlinguyinca.powerpack.doctor`.
 
-- **Dependency + version locking** — `config/bundle.lock.json` pins every upstream
-  by commit SHA. The lock is the deployment source of truth; upstream `HEAD` is
-  never followed.
-- **Environment-aware bootstrap/reconcile** — detects OS/arch/HerdR version/toolchain
-  and installs only what is compatible; everything else degrades gracefully.
-- **Ownership-aware, idempotent config** — it never touches the user's HerdR config or
-  other plugins; repeated reconcile is a no-op.
-- **Health / doctor UX** — human and machine-readable (`--json`) capability matrix.
-- **Update / rollback** — snapshot before update; restore known-good on failure.
-- **Security checks** — provenance inventory, unsafe-listener detection, secret redaction.
+## Deploy across many hosts (Ansible)
 
-## What it bundles (default)
+The bundled role is **host-agnostic** — it keys off `ansible_os_family` /
+`ansible_architecture`, never host names, so the same playbook configures Linux and macOS
+fleet-wide. Point it at your existing inventory, any host group:
 
-Capability | Upstream (pinned) | Notes
---- | --- | ---
-Browser (CDP/QA) | `StructuPath/herdr-browser` | real Chromium, local-site inspection, console/network errors, QA screenshots, observe-only/takeover
-Mobile / web | `powerfooI/roamgate` | full desktop+mobile PWA client; **private-by-default** (loopback)
-Swarm | `StructuPath/herdr-swarm` | worktree-per-agent fan-out, review-first harvest
-Worktrees | `serhii-chernenko/herdr-worktreeinclude` | project-local worktrees + `.worktreeinclude`
-File review | `JonasBaeumer/herdr-file-annotator` | agent-summoned blocking diff review (MCP)
-Diff review | `persiyanov/herdr-reviewr` | diff/file viewer + line comments back to the agent (replaces held Plannotator)
-GitHub / CI | `itisbryan/herdr-gh-checks`, `cdowell09/herdr-pr-board` | degrade (not fail) when unauthenticated
-Desktop notifications | `quinnjr/herdr-notifications` | native OS notifications, no network (needs a working Rust toolchain)
-
-Optional (disabled by default): `zenbu-labs/terminal-browser`, `barnuri/herdr-notifications`
-(Telegram). Hold: `plannotator/herdr-plannotator` (see audit) — its review capability is
-covered by `persiyanov/herdr-reviewr`. Rejected: task/dispatch plugins (competing state
-models / no license).
-
-Full reasoning and every ADOPT/OPTIONAL/ADAPT/HOLD/REJECT decision: **[`docs/upstream-audit.md`](docs/upstream-audit.md)**.
-
-## Powerpack-owned vs upstream
-
-| Owned by the Powerpack | Owned by upstream |
-| --- | --- |
-| `herdr-plugin.toml`, `scripts/*.sh`, `config/bundle.lock.json` | `StructuPath/herdr-browser` |
-| doctor / reconcile / update / rollback logic | `powerfooI/roamgate` |
-| dependency selection + enablement | `StructuPath/herdr-swarm`, `…/herdr-worktreeinclude` |
-| health matrix, unsafe-listener check | `JonasBaeumer/herdr-file-annotator` |
-| provenance/security inventory | `itisbryan/herdr-gh-checks`, `cdowell09/herdr-pr-board`, `quinnjr/herdr-notifications` |
-
-The Powerpack does **not** contain or re-implement any browser engine, remote-desktop
-stack, Pi/Pi Web, `pi-engineering`, `autospec`, Plannotator, or GitHub client.
-
-## Install
+```yaml
+# inventory.yml — any group you like
+[fleet]
+fry        ansible_host=10.0.0.11
+beast      ansible_host=10.0.0.12
+bender     ansible_host=10.0.0.13
+macbook-m4 ansible_host=10.0.0.20 ansible_connection=ssh
+```
 
 ```bash
-herdr plugin install berlinguyinca/herdr-powerpack
+ansible-playbook -i inventory.yml ansible/playbook.yml
 ```
 
-Install `herdr` itself, if you don't already have it:
+The role (1) installs `git`/`curl`/`jq` per OS, (2) installs herdr (official installer,
+or a pinned `powerpack_herdr_url`) and the Powerpack at a pinned ref, and (3) writes the
+owned `enable.list`, runs `reconcile`, then `doctor --json`. Set
+`powerpack_strict_doctor: true` to fail the run on a critical finding — ideal as a
+fleet-wide CI gate. Fleet defaults live in `group_vars/all.yml`; override per host in
+`host_vars/`. Headless nodes are fine: GUI capabilities just report *degraded*.
 
-```bash
-curl -fsSL https://herdr.dev/install.sh | sh   # checksum-verified, installs to ~/.local/bin
+```yaml
+# group_vars/all.yml
+powerpack_ref: <full-commit-sha>     # pin the Powerpack release for reproducible deploys
+powerpack_mobile_bind: loopback      # private by default; 'tailscale' for tailnet
+powerpack_prereq_bun: true           # install bun so roamgate (mobile) is available
+powerpack_strict_doctor: false       # set true for a CI-style gate (not on headless)
 ```
 
-The install's build hook (`scripts/bootstrap.sh`) runs **best-effort**: it installs each
-locked upstream at its pinned SHA and **never aborts** the Powerpack install on a
-per-dependency failure. Missing toolchains (e.g. `bun`) cause a capability to be *skipped*
-(degraded), not to fail the install.
+## How the fabric works
 
-Prerequisites: `bash`, `git`, `curl` (always); `jq` (for machine-readable doctor).
-Per-capability toolchains are optional and detected: `node`, `bun`, `go`, `cargo`, `gh`.
+The Powerpack is deliberately a **thin coordination layer**. HerdR loads it as one plugin;
+its manifest exposes `bootstrap`, `reconcile`, `doctor`, `update`, `rollback`, and `board`.
+At install/reconcile time it reads the lock, installs each pinned upstream, and records the
+result. `doctor` cross-references what's actually installed against the lock's accepted /
+`rejected` set, so it both reports health and **enforces the integration boundary** (it
+flags any competing task/dispatch state machine). `update` snapshots the known-good set,
+re-pins at locked SHAs, runs a smoke gate, and **auto-rolls-back on regression**;
+`rollback` restores the last snapshot.
 
-### Doctor / status
-
-```bash
-herdr plugin action invoke berlinguyinca.powerpack.doctor          # human matrix
-herdr plugin action invoke berlinguyinca.powerpack.versions        # locked vs installed
-herdr plugin pane open --plugin berlinguyinca.powerpack --entrypoint board   # board pane
+```mermaid
+flowchart LR
+  subgraph Host["HerdR host (Linux / macOS)"]
+    HR[herdr] --> PP[HerdR Powerpack]
+    PP --> LOCK[config/bundle.lock.json<br/>pinned upstreams]
+    PP --> S[scripts/ bootstrap · reconcile ·<br/>doctor · update · rollback]
+  end
+  subgraph Up["pinned upstream HerdR plugins"]
+    B[herdr-browser] & R[roamgate] & SW[herdr-swarm]
+    W[worktreeinclude] & FA[file-annotator] & RV[herdr-reviewr]
+    GH[gh-checks · pr-board] & NT[desktop notifications]
+  end
+  LOCK -. pins SHA .-> Up
+  S -. install / self-heal / health-check .-> Up
+  S -. doctor guard .-> REJ[rejected: task/dispatch plugins]
 ```
 
-Machine-readable (for Ansible/CI):
-
-```bash
-scripts/doctor.sh --json          # full matrix as JSON
-scripts/doctor.sh --json --strict # exit 1 if a default capability is missing/failed
+```mermaid
+sequenceDiagram
+  participant U as User / CI / Ansible
+  participant P as Powerpack
+  participant L as bundle.lock.json
+  participant H as HerdR (upstreams)
+  U->>P: install / reconcile
+  P->>L: read pinned deps
+  P->>H: install upstreams at pinned SHA
+  H-->>P: per-dependency status
+  P->>P: doctor health matrix
+  P-->>U: human / --json / --strict
+  U->>P: update
+  P->>P: snapshot → re-pin → smoke gate
+  P-->>U: auto-rollback on regression
 ```
 
-## Update & rollback
+Mobile access stays **private by default**: Roamgate binds `127.0.0.1:8787`; reach it from
+your phone over Tailscale rather than opening a public port.
 
-```bash
-herdr plugin action invoke berlinguyinca.powerpack.update     # snapshot + refresh pinned deps
-herdr plugin action invoke berlinguyinca.powerpack.rollback   # restore last snapshot
-herdr plugin action invoke berlinguyinca.powerpack.reconcile  # self-heal (re-add missing defaults)
+```mermaid
+flowchart LR
+  PH[phone / laptop] --> TS[Tailscale tailnet] --> HOST[HerdR host]
+  HOST --> RG[Roamgate on 127.0.0.1:8787]
 ```
 
-There is no `herdr plugin update` in HerdR v1, so Powerpack "update" = snapshot the current
-known-good set, re-pin every dependency at its locked SHA, and (Phase 3) gate on smoke
-tests, rolling back automatically on a critical failure.
-
-## Mobile / private access model
-
-The mobile surface is **Roamgate**, which binds to **`127.0.0.1` by default** (port 8787).
-The intended private path is:
-
-```
-phone / laptop  ──>  Tailscale (tailnet)  ──>  HerdR host  ──>  Roamgate (loopback)
-```
-
-The Powerpack **never** opens a public bind. For tailnet access, keep Roamgate on loopback
-and reach it over Tailscale (SSH tunnel / tailnet route to loopback), or bind the tailnet
-interface with a strong `ROAMGATE_PASSWORD` + TLS. `doctor` reports any non-loopback
-listener on the bundle's web/CDP ports as a warning. See [`docs/security.md`](docs/security.md).
-
-## Headless / multi-host
-
-Linux and macOS. Headless nodes report unsupported/degraded GUI capabilities (browser,
-desktop notifications) instead of failing the bundle. Deployment is designed for the
-existing Ansible project (host-agnostic — no hard-coded host names); see `ansible/` and
-[`docs/troubleshooting.md`](docs/troubleshooting.md).
-
-## Repository layout
-
-```
-herdr-powerpack/
-  herdr-plugin.toml        # current-format manifest
-  config/bundle.lock.json  # pinned upstreams (source of truth)
-  scripts/                 # thin bootstrap/reconcile/doctor/update/rollback glue (Bash)
-  docs/                    # architecture, upstream-audit, security, troubleshooting
-  ansible/                 # deployment role (Phase 5)
-  tests/run-tests.sh       # acceptance test harness (isolated HOME)
-  .github/workflows/ci.yml # pins herdr + Rust, runs the harness in CI
-```
-
-CI (`.github/workflows/ci.yml`) provisions a pinned `herdr` v0.9.1 (sha256-verified),
-a Rust toolchain (for the desktop-notifications build), and pyyaml + shellcheck, then
-runs `tests/run-tests.sh` against an isolated HOME. Bump the pinned herdr version there
-when you intentionally target a newer runtime.
-
-## Development / tests
-
-```bash
-tests/run-tests.sh          # isolated, hermetic acceptance tests (no live browser needed)
-```
-
-## License
-
-MIT — see [LICENSE](LICENSE). Upstream plugins retain their own licenses (inventoried in
-`config/bundle.lock.json`).
+See `docs/` for the full architecture, upstream audit, security model, and troubleshooting,
+and `tests/run-tests.sh` for the 35-assertion acceptance harness (also run by CI). MIT
+licensed; upstream plugins retain their own licenses (inventoried in the lock).
