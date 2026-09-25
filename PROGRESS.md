@@ -71,6 +71,12 @@ Visible checklist. Updated at every milestone.
 - [x] notifications **re-enabled as default**; Powerpack sets `RUSTUP_HOME`/`RUSTUP_TOOLCHAIN` for cargo deps (`pp_ensure_rustup_env`)
 - [x] verified: full default bundle now installs notifications (7 installed, 0 failed); harness **34/34 pass** (added Test 15: notifications install + binary builds on a Rust host)
 
+## CI + herdr install (user supplied the official install method)
+- [x] herdr official install: `curl -fsSL https://herdr.dev/install.sh | sh` (checksum-verified, os/arch-detecting, installs to ~/.local/bin)
+- [x] **CI workflow** `.github/workflows/ci.yml`: pins herdr v0.9.1 (release asset + sha256 verified by hand here), installs Rust (notifications build), optional pyyaml + shellcheck; runs the isolated-HOME harness; archives debug on failure
+- [x] Ansible role: `powerpack_install_herdr` now uses the official installer by default; `powerpack_herdr_url` remains a pin override for reproducible deploys
+- [x] verified the CI pin's sha256 matches the downloaded release binary exactly; harness still **35/35 pass**
+
 ## Post-implementation fix — review capability replacement (user: implement replacement recommendations)
 - [x] **`persiyanov/herdr-reviewr`** (MIT, active, v0.39.0, min_herdr 0.7.5) adopted as the **default review capability**, replacing the held (broken) Plannotator
 - [x] verified: installs cleanly on HerdR 0.9.1; **checksum-verified prebuilt binary** (no Rust build, no runtime network); diff review + line comments back to the agent; auto-opens on worktree.created/opened (composes with swarm)

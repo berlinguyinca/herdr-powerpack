@@ -14,8 +14,9 @@ ansible-playbook -i <inventory> ansible/playbook.yml
 1. **Prereqs** — installs `git`, `curl`, `jq` (per OS family). Optionally installs
    `go` (pr-board) and/or `bun` (roamgate) via `powerpack_prereq_go` /
    `powerpack_prereq_bun`.
-2. **Install** — ensures `herdr` (if `powerpack_install_herdr`, using
-   `powerpack_herdr_url`), then installs the Powerpack at `powerpack_repo` /
+2. **Install** — ensures `herdr` (if `powerpack_install_herdr`, via the official
+   `https://herdr.dev/install.sh` installer, or a pinned `powerpack_herdr_url` for
+   reproducible deploys), then installs the Powerpack at `powerpack_repo` /
    `powerpack_ref` (client-side, socket-less, idempotent).
 3. **Verify** — writes the owned `enable.list` (optional capabilities), runs the
    Powerpack `reconcile` (self-heal, enforces the private mobile bind), then runs

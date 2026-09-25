@@ -3,15 +3,22 @@
 
 - name: Install the herdr CLI (when powerpack_install_herdr)
   block:
-    - name: Assert a herdr binary URL is configured
-      assert:
-        that: powerpack_herdr_url | length > 0
-        fail_msg: "powerpack_install_herdr is true but powerpack_herdr_url is empty — set a prebuilt binary URL for this OS/arch."
-    - name: Download the herdr binary
+    # Default: the official checksum-verified installer (installs latest to
+    # ~/.local/bin, host-agnostic — detects os/arch itself).
+    - name: Install herdr via the official installer
+      shell: curl -fsSL https://herdr.dev/install.sh | sh
+      args:
+        warn: false
+      environment:
+        HERDR_INSTALL_DIR: "{{ powerpack_home }}/.local/bin"
+      when: powerpack_herdr_url | length == 0
+    # Reproducible deploys: pin a specific release binary instead of latest.
+    - name: Install herdr from a pinned binary URL
       get_url:
         url: "{{ powerpack_herdr_url }}"
         dest: "{{ powerpack_home }}/.local/bin/herdr"
         mode: "0755"
+      when: powerpack_herdr_url | length > 0
     - name: Ensure ~/.local/bin is on PATH
       lineinfile:
         path: "{{ powerpack_home }}/.bashrc"

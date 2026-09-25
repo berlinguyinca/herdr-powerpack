@@ -1,0 +1,56 @@
+name: ci
+
+# HerdR Powerpack — reproducible acceptance harness.
+#
+# Provisions herdr (pinned to the version the lock was tested against), a Rust
+# toolchain (desktop notifications is a cargo dep), and optional pyyaml +
+# shellcheck so Tests 14/16 run with full coverage, then runs tests/run-tests.sh
+# against an ISOLATED HOME (the real user's HerdR is never touched).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  harness:
+    name: harness (linux-x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (for the notifications cargo build test)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install herdr (pinned v0.9.1, sha256-verified)
+        env:
+          HERDR_INSTALL_DIR: "${{ github.workspace }}/bin"
+        run: |
+          set -euxo pipefail
+          mkdir -p "$HERDR_INSTALL_DIR"
+          url="https://github.com/herdrdev/herdr/releases/download/v0.9.1/herdr-linux-x86_64"
+          sha="2a02fed16beb651ef006e1d43f048f652ca4dc58ad053cd2d44450563d5c54b7"
+          curl -fsSL --retry 3 --connect-timeout 10 -o "$HERDR_INSTALL_DIR/herdr" "$url"
+          printf '%s  %s\n' "$sha" "$HERDR_INSTALL_DIR/herdr" | sha256sum -c -
+          chmod +x "$HERDR_INSTALL_DIR/herdr"
+          "$HERDR_INSTALL_DIR/herdr" --version
+
+      - name: Install optional lint/test deps (shellcheck, pyyaml)
+        run: |
+          set -ex
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          python3 -m pip install --quiet --user pyyaml || true
+        continue-on-error: true
+
+      - name: Run the Powerpack acceptance harness
+        env:
+          PATH: "${{ github.workspace }}/bin:$PATH"
+        run: bash tests/run-tests.sh
+
+      - name: Archive harness debug output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pp-test-debug
+          path: /tmp/pp-test.*

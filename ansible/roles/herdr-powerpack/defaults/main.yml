@@ -9,7 +9,10 @@ powerpack_repo: berlinguyinca/herdr-powerpack
 powerpack_ref: ""
 
 # Whether to install the `herdr` CLI itself. Default false (assume present on the fleet).
-# When true, `powerpack_herdr_url` must point at a suitable prebuilt binary.
+# When true, installs via the official checksum-verified installer
+# (curl -fsSL https://herdr.dev/install.sh | sh) to ~/.local/bin, which detects the
+# os/arch itself. Set `powerpack_herdr_url` to a pinned release binary URL instead
+# (e.g. .../herdr/releases/download/v0.9.1/herdr-linux-x86_64) for reproducible deploys.
 powerpack_install_herdr: false
 powerpack_herdr_url: ""
 

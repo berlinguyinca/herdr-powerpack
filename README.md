@@ -60,6 +60,12 @@ stack, Pi/Pi Web, `pi-engineering`, `autospec`, Plannotator, or GitHub client.
 herdr plugin install berlinguyinca/herdr-powerpack
 ```
 
+Install `herdr` itself, if you don't already have it:
+
+```bash
+curl -fsSL https://herdr.dev/install.sh | sh   # checksum-verified, installs to ~/.local/bin
+```
+
 The install's build hook (`scripts/bootstrap.sh`) runs **best-effort**: it installs each
 locked upstream at its pinned SHA and **never aborts** the Powerpack install on a
 per-dependency failure. Missing toolchains (e.g. `bun`) cause a capability to be *skipped*
@@ -126,7 +132,13 @@ herdr-powerpack/
   docs/                    # architecture, upstream-audit, security, troubleshooting
   ansible/                 # deployment role (Phase 5)
   tests/run-tests.sh       # acceptance test harness (isolated HOME)
+  .github/workflows/ci.yml # pins herdr + Rust, runs the harness in CI
 ```
+
+CI (`.github/workflows/ci.yml`) provisions a pinned `herdr` v0.9.1 (sha256-verified),
+a Rust toolchain (for the desktop-notifications build), and pyyaml + shellcheck, then
+runs `tests/run-tests.sh` against an isolated HOME. Bump the pinned herdr version there
+when you intentionally target a newer runtime.
 
 ## Development / tests
 
