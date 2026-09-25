@@ -67,10 +67,13 @@ tunnel or a tailnet-bound bind with `ROAMGATE_PASSWORD`). It never opens a publi
 `herdr-gh-checks` and `herdr-pr-board` are installed by default but the doctor reports
 **degraded** (not failed) when `gh` is unauthenticated.
 
-### D8 — Plannotator is HOLD, not ADOPT
+### D8 — Plannotator is HOLD; reviewr is the adopted default review capability
 `official.plannotator` currently cannot work (hard-coded `official.browser` dependency on
-a deprecated plugin). It is recorded in the lock as `enabled:false` with a promotion note.
-No fork, no fake integration.
+a deprecated plugin). It is recorded in the lock as `hold:true` (never auto-installed).
+The **diff-review / file-viewer** capability is provided by the adopted default
+`persiyanov/herdr-reviewr` (MIT, actively maintained, checksum-verified prebuilt binary;
+auto-opens on `worktree.created/opened` and composes with swarm). No fork, no fake
+integration.
 
 ## Runtime model
 
@@ -84,7 +87,7 @@ herdr plugin install berlinguyinca/herdr-powerpack
          write state/reconcile.json (matrix)
    └─ [[startup]] scripts/reconcile.sh         (per server start; light verify)
          verify installed deps still present/enabled; refresh state; no side effects
-   └─ [[actions]] doctor|status|versions|reconcile|update|repair|rollback|uninstall-clean
+   └─ [[actions]] doctor|status|versions|reconcile|update|rollback
    └─ [[panes]]  board                          (human capability/health matrix)
 ```
 
@@ -94,20 +97,18 @@ herdr plugin install berlinguyinca/herdr-powerpack
 id = "berlinguyinca.powerpack"
 name = "HerdR Powerpack"
 version = "0.1.0"
-min_herdr_version = "0.8.2"      # highest min among adopted deps (terminal-browser)
+min_herdr_version = "0.7.0"      # Powerpack floor; each adopted dep self-gates its own min
 platforms = ["linux", "macos"]
 
 [[build]]   command = ["bash", "scripts/bootstrap.sh"]
-[[startup]] command = ["bash", "scripts/reconcile.sh"]
+[[startup]] command = ["bash", "scripts/reconcile.sh", "--light"]
 
 [[actions]] id="doctor" …            # scripts/doctor.sh (human + --json)
 [[actions]] id="status" …
 [[actions]] id="versions" …
-[[actions]] id="reconcile" …
+[[actions]] id="reconcile" …         # --full = self-heal/repair (reinstall missing pinned deps)
 [[actions]] id="update" …            # preflight → snapshot → update → smoke → accept|rollback
-[[actions]] id="repair" …
 [[actions]] id="rollback" …
-[[actions]] id="uninstall-clean" …   # remove powerpack-owned glue + managed deps (optional)
 
 [[panes]] id="board" title="Powerpack" placement="popup" command=["bash","scripts/board.sh"]
 ```
