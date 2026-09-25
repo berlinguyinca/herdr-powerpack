@@ -34,6 +34,7 @@ jobs:
           printf '%s  %s\n' "$sha" "$HERDR_INSTALL_DIR/herdr" | sha256sum -c -
           chmod +x "$HERDR_INSTALL_DIR/herdr"
           "$HERDR_INSTALL_DIR/herdr" --version
+          echo "$HERDR_INSTALL_DIR" >> "$GITHUB_PATH"
 
       - name: Install optional lint/test deps (shellcheck, pyyaml)
         run: |
@@ -44,8 +45,6 @@ jobs:
         continue-on-error: true
 
       - name: Run the Powerpack acceptance harness
-        env:
-          PATH: "${{ github.workspace }}/bin:$PATH"
         run: bash tests/run-tests.sh
 
       - name: Archive harness debug output on failure
